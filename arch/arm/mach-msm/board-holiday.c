@@ -468,18 +468,27 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 };
 
 #ifdef CONFIG_PERFLOCK
-static unsigned holiday_perf_acpu_table_1188k[] = {
+static unsigned holiday_perf_acpu_table[] = {
 	384000000,
 	756000000,
 	1188000000,
 };
-static unsigned holiday_perf_acpu_table_1512k[] = {
-	540000000,
-	1026000000,
-	1512000000,
+
+static struct perflock_platform_data holiday_perflock_data = {
+	.perf_acpu_table = holiday_perf_acpu_table,
+	.table_size = ARRAY_SIZE(holiday_perf_acpu_table),
 };
 
-static struct perflock_platform_data holiday_perflock_data;
+static unsigned holiday_cpufreq_ceiling_acpu_table[] = {
+	-1,
+	-1,
+	1026000000,
+};
+
+static struct perflock_platform_data holiday_cpufreq_ceiling_data = {
+	.perf_acpu_table = holiday_cpufreq_ceiling_acpu_table,
+	.table_size = ARRAY_SIZE(holiday_cpufreq_ceiling_acpu_table),
+};
 #endif
 
 /*
@@ -497,8 +506,8 @@ static struct regulator_init_data saw_s0_init_data = {
 		.constraints = {
 			.name = "8901_s0",
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-			.min_uV = 840000,
-			.max_uV = 1250000,
+			.min_uV = 800000,
+			.max_uV = 1350000,
 		},
 		.consumer_supplies = vreg_consumers_8901_S0,
 		.num_consumer_supplies = ARRAY_SIZE(vreg_consumers_8901_S0),
@@ -508,8 +517,8 @@ static struct regulator_init_data saw_s1_init_data = {
 		.constraints = {
 			.name = "8901_s1",
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-			.min_uV = 840000,
-			.max_uV = 1250000,
+			.min_uV = 800000,
+			.max_uV = 1350000,
 		},
 		.consumer_supplies = vreg_consumers_8901_S1,
 		.num_consumer_supplies = ARRAY_SIZE(vreg_consumers_8901_S1),
@@ -3144,9 +3153,9 @@ static struct regulator_consumer_supply vreg_consumers_PM8901_S4_PC[] = {
 
 /* RPM early regulator constraints */
 static struct rpm_regulator_init_data rpm_regulator_early_init_data[] = {
-	/*	 ID	   a_on pd ss min_uV   max_uV   init_ip	freq */
-	RPM_SMPS(PM8058_S0, 0, 1, 1,  500000, 1250000, SMPS_HMIN, 1p92),
-	RPM_SMPS(PM8058_S1, 0, 1, 1,  500000, 1250000, SMPS_HMIN, 1p92),
+	/*	 ID       a_on pd ss min_uV   max_uV   init_ip    freq */
+	RPM_SMPS(PM8058_S0, 0, 1, 1,  500000, 1350000, SMPS_HMIN, 1p92),
+	RPM_SMPS(PM8058_S1, 0, 1, 1,  500000, 1350000, SMPS_HMIN, 1p92),
 };
 
 /* RPM regulator constraints */
