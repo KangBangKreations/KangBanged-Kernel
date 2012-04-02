@@ -947,6 +947,17 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
 	/* assure that the starting sequence is run in __cpufreq_set_policy */
 	policy->governor = NULL;
 
+<<<<<<< HEAD
+=======
+	/* cmdline_khz governor */
+	if ((*cmdline_gov) && (strcmp(cmdline_gov, "") != 0)) {
+		if (cpufreq_parse_governor(cmdline_gov, &new_policy.policy,
+							&new_policy.governor))
+		return -EINVAL;
+		printk(KERN_INFO "[cmdline_gov]: Governor set to '%s'", cmdline_gov);
+	}
+
+>>>>>>> abb5897... cmdline_gov: remove debug test
 	/* set default policy */
 	ret = __cpufreq_set_policy(policy, &new_policy);
 	policy->user_policy.policy = policy->policy;
