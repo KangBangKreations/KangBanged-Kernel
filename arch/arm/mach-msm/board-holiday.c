@@ -506,7 +506,7 @@ static struct regulator_init_data saw_s0_init_data = {
 		.constraints = {
 			.name = "8901_s0",
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-			.min_uV = 800000,
+			.min_uV = 750000,
 			.max_uV = 1350000,
 		},
 		.consumer_supplies = vreg_consumers_8901_S0,
@@ -517,7 +517,7 @@ static struct regulator_init_data saw_s1_init_data = {
 		.constraints = {
 			.name = "8901_s1",
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-			.min_uV = 800000,
+			.min_uV = 750000,
 			.max_uV = 1350000,
 		},
 		.consumer_supplies = vreg_consumers_8901_S1,
@@ -7074,14 +7074,8 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 	acpuclk_init(&acpuclk_8x60_soc_data);
 
 #ifdef CONFIG_PERFLOCK
-	if (holiday_perf_acpu_table_1188k[PERF_LOCK_HIGHEST] == get_max_cpu_freq() * 1000) {
-		holiday_perflock_data.perf_acpu_table = holiday_perf_acpu_table_1188k;
-		holiday_perflock_data.table_size = ARRAY_SIZE(holiday_perf_acpu_table_1188k);
-	} else {
-		holiday_perflock_data.perf_acpu_table = holiday_perf_acpu_table_1512k;
-		holiday_perflock_data.table_size = ARRAY_SIZE(holiday_perf_acpu_table_1512k);
-	}
 	perflock_init(&holiday_perflock_data);
+	cpufreq_ceiling_init(&holiday_cpufreq_ceiling_data);
 #endif
 
 #ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
