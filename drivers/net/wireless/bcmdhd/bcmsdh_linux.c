@@ -21,7 +21,11 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
+<<<<<<< HEAD
  * $Id: bcmsdh_linux.c 281719 2011-09-02 23:50:57Z $
+=======
+ * $Id: bcmsdh_linux.c 312788 2012-02-03 23:06:32Z $
+>>>>>>> 987edea... Linux 3.0.30
  */
 
 /**
@@ -144,17 +148,6 @@ EXPORT_SYMBOL(bcmsdh_remove);
 /* forward declarations */
 static int __devinit bcmsdh_probe(struct device *dev);
 static int __devexit bcmsdh_remove(struct device *dev);
-#endif /* BCMLXSDMMC */
-
-#ifndef BCMLXSDMMC
-static struct device_driver bcmsdh_driver = {
-	.name		= "pxa2xx-mci",
-	.bus		= &platform_bus_type,
-	.probe		= bcmsdh_probe,
-	.remove		= bcmsdh_remove,
-	.suspend	= NULL,
-	.resume		= NULL,
-	};
 #endif /* BCMLXSDMMC */
 
 #ifndef BCMLXSDMMC
@@ -531,13 +524,8 @@ bcmsdh_register(bcmsdh_driver_t *driver)
 	drvinfo = *driver;
 
 #if defined(BCMPLATFORM_BUS)
-#if defined(BCMLXSDMMC)
 	SDLX_MSG(("Linux Kernel SDIO/MMC Driver\n"));
 	error = sdio_function_init();
-#else
-	SDLX_MSG(("Intel PXA270 SDIO Driver\n"));
-	error = driver_register(&bcmsdh_driver);
-#endif /* defined(BCMLXSDMMC) */
 	return error;
 #endif /* defined(BCMPLATFORM_BUS) */
 
@@ -565,14 +553,12 @@ bcmsdh_unregister(void)
 	if (bcmsdh_pci_driver.node.next)
 #endif
 
-#if defined(BCMPLATFORM_BUS) && !defined(BCMLXSDMMC)
-		driver_unregister(&bcmsdh_driver);
-#endif
 #if defined(BCMLXSDMMC)
 	sdio_function_cleanup();
 #endif /* BCMLXSDMMC */
+
 #if !defined(BCMPLATFORM_BUS) && !defined(BCMLXSDMMC)
-		pci_unregister_driver(&bcmsdh_pci_driver);
+	pci_unregister_driver(&bcmsdh_pci_driver);
 #endif /* BCMPLATFORM_BUS */
 }
 
@@ -677,6 +663,18 @@ void bcmsdh_unregister_oob_intr(void)
 }
 #endif /* defined(OOB_INTR_ONLY) */
 
+<<<<<<< HEAD
+=======
+#if defined(BCMLXSDMMC)
+void *bcmsdh_get_drvdata(void)
+{
+	if (!sdhcinfo)
+		return NULL;
+	return dev_get_drvdata(sdhcinfo->dev);
+}
+#endif
+
+>>>>>>> 987edea... Linux 3.0.30
 /* Module parameters specific to each host-controller driver */
 
 extern uint sd_msglevel;	/* Debug message level */
@@ -701,6 +699,10 @@ extern uint sd_f2_blocksize;
 module_param(sd_f2_blocksize, int, 0);
 
 #ifdef BCMSDIOH_STD
+<<<<<<< HEAD
+=======
+extern int sd_uhsimode;
+>>>>>>> 987edea... Linux 3.0.30
 module_param(sd_uhsimode, int, 0);
 #endif
 

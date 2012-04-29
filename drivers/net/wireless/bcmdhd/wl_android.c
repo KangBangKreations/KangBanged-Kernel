@@ -67,14 +67,20 @@
 #define CMD_BTCOEXSCAN_STOP		"BTCOEXSCAN-STOP"
 #define CMD_BTCOEXMODE			"BTCOEXMODE"
 #define CMD_SETSUSPENDOPT		"SETSUSPENDOPT"
+<<<<<<< HEAD
 #define CMD_MAC_ADDR		"MACADDR"
+=======
+#define CMD_SETSUSPENDMODE		"SETSUSPENDMODE"
+>>>>>>> 987edea... Linux 3.0.30
 #define CMD_P2P_DEV_ADDR		"P2P_DEV_ADDR"
 #define CMD_SETFWPATH			"SETFWPATH"
 #define CMD_SETBAND			"SETBAND"
 #define CMD_GETBAND			"GETBAND"
 #define CMD_COUNTRY			"COUNTRY"
 #define CMD_P2P_SET_NOA			"P2P_SET_NOA"
+#if !defined WL_ENABLE_P2P_IF
 #define CMD_P2P_GET_NOA			"P2P_GET_NOA"
+#endif
 #define CMD_P2P_SET_PS			"P2P_SET_PS"
 #define CMD_SET_AP_WPS_P2P_IE 		"SET_AP_WPS_P2P_IE"
 #define CMD_P2P_SET_MPC 		"P2P_MPC_SET"
@@ -234,12 +240,32 @@ static int wl_android_set_suspendopt(struct net_device *dev, char *command, int 
 	ret_now = net_os_set_suspend_disable(dev, suspend_flag);
 
 	if (ret_now != suspend_flag) {
-		if (!(ret = net_os_set_suspend(dev, ret_now)))
+		if (!(ret = net_os_set_suspend(dev, ret_now, 1)))
 			DHD_INFO(("%s: Suspend Flag %d -> %d\n",
 				__FUNCTION__, ret_now, suspend_flag));
 		else
 			DHD_ERROR(("%s: failed %d\n", __FUNCTION__, ret));
 	}
+	return ret;
+}
+
+static int wl_android_set_suspendmode(struct net_device *dev, char *command, int total_len)
+{
+	int ret = 0;
+
+#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(DHD_USE_EARLYSUSPEND)
+	int suspend_flag;
+
+	suspend_flag = *(command + strlen(CMD_SETSUSPENDMODE) + 1) - '0';
+
+	if (suspend_flag != 0)
+		suspend_flag = 1;
+
+	if (!(ret = net_os_set_suspend(dev, suspend_flag, 0)))
+		DHD_INFO(("%s: Suspend Mode %d\n",__FUNCTION__,suspend_flag));
+	else
+		DHD_ERROR(("%s: failed %d\n",__FUNCTION__,ret));
+#endif
 	return ret;
 }
 
@@ -256,6 +282,7 @@ static int wl_android_get_band(struct net_device *dev, char *command, int total_
 	return bytes_written;
 }
 
+<<<<<<< HEAD
 #if 0
 static int wl_android_set_active_scan(struct net_device *dev, char *command, int total_len)
 {
@@ -661,6 +688,9 @@ static int wl_android_set_ap_mac_list(struct net_device *dev, void *buf)
 
 
 #ifdef PNO_SUPPORT
+=======
+#if defined(PNO_SUPPORT) && !defined(WL_SCHED_SCAN)
+>>>>>>> 987edea... Linux 3.0.30
 static int wl_android_set_pno_setup(struct net_device *dev, char *command, int total_len)
 {
 	wlc_ssid_t ssids_local[MAX_PFN_LIST_COUNT];
@@ -767,6 +797,7 @@ static int wl_android_set_pno_setup(struct net_device *dev, char *command, int t
 exit_proc:
 	return res;
 }
+<<<<<<< HEAD
 
 static int wl_android_del_pfn(struct net_device *dev, char *command, int total_len)
 {
@@ -800,6 +831,9 @@ static int wl_android_del_pfn(struct net_device *dev, char *command, int total_l
 }
 
 #endif /* PNO_SUPPORT */
+=======
+#endif /* PNO_SUPPORT && !WL_SCHED_SCAN */
+>>>>>>> 987edea... Linux 3.0.30
 
 #ifdef WL_CFG80211
 static int wl_android_get_mac_addr(struct net_device *ndev, char *command, int total_len)
@@ -1580,6 +1614,9 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 	else if (strnicmp(command, CMD_SETSUSPENDOPT, strlen(CMD_SETSUSPENDOPT)) == 0) {
 		bytes_written = wl_android_set_suspendopt(net, command, priv_cmd.total_len);
 	}
+	else if (strnicmp(command, CMD_SETSUSPENDMODE, strlen(CMD_SETSUSPENDMODE)) == 0) {
+		bytes_written = wl_android_set_suspendmode(net, command, priv_cmd.total_len);
+	}
 	else if (strnicmp(command, CMD_SETBAND, strlen(CMD_SETBAND)) == 0) {
 		uint band = *(command + strlen(CMD_SETBAND) + 1) - '0';
 		bytes_written = wldev_set_band(net, band);
@@ -1591,7 +1628,7 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		char *country_code = command + strlen(CMD_COUNTRY) + 1;
 		bytes_written = wldev_set_country(net, country_code);
 	}
-#ifdef PNO_SUPPORT
+#if defined(PNO_SUPPORT) && !defined(WL_SCHED_SCAN)
 	else if (strnicmp(command, CMD_PNOSSIDCLR_SET, strlen(CMD_PNOSSIDCLR_SET)) == 0) {
 		bytes_written = dhd_dev_pno_reset(net);
 	}
@@ -1616,9 +1653,11 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		bytes_written = wl_cfg80211_set_p2p_noa(net, command + skip,
 			priv_cmd.total_len - skip);
 	}
+#if !defined WL_ENABLE_P2P_IF
 	else if (strnicmp(command, CMD_P2P_GET_NOA, strlen(CMD_P2P_GET_NOA)) == 0) {
 		bytes_written = wl_cfg80211_get_p2p_noa(net, command, priv_cmd.total_len);
 	}
+#endif
 	else if (strnicmp(command, CMD_P2P_SET_PS, strlen(CMD_P2P_SET_PS)) == 0) {
 		int skip = strlen(CMD_P2P_SET_PS) + 1;
 		bytes_written = wl_cfg80211_set_p2p_ps(net, command + skip,
@@ -1703,10 +1742,18 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		snprintf(command, 3, "OK");
 		bytes_written = strlen("OK");
 	}
+<<<<<<< HEAD
 	if (bytes_written >= 0) {
 		if (bytes_written == 0)
 			command[0] = '\0';
 		if (bytes_written > priv_cmd.total_len) {
+=======
+
+	if (bytes_written >= 0) {
+		if ((bytes_written == 0) && (priv_cmd.total_len > 0))
+			command[0] = '\0';
+		if (bytes_written >= priv_cmd.total_len) {
+>>>>>>> 987edea... Linux 3.0.30
 			DHD_ERROR(("%s: bytes_written = %d\n", __FUNCTION__, bytes_written));
 			bytes_written = priv_cmd.total_len;
 		} else {
@@ -1717,7 +1764,8 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 			DHD_ERROR(("%s: failed to copy data to user buffer\n", __FUNCTION__));
 			ret = -EFAULT;
 		}
-	} else {
+	}
+	else {
 		ret = bytes_written;
 	}
 
@@ -1734,7 +1782,7 @@ int wl_android_init(void)
 {
 	int ret = 0;
 
-	dhd_msg_level = DHD_ERROR_VAL;
+	dhd_msg_level |= DHD_ERROR_VAL;
 #ifdef ENABLE_INSMOD_NO_FW_LOAD
 	dhd_download_fw_on_driverload = FALSE;
 #endif /* ENABLE_INSMOD_NO_FW_LOAD */
@@ -1817,13 +1865,14 @@ void* wl_android_prealloc(int section, unsigned long size)
 		alloc_ptr = wifi_control_data->mem_prealloc(section, size);
 		if (alloc_ptr) {
 			DHD_INFO(("success alloc section %d\n", section));
-			bzero(alloc_ptr, size);
+			if (size != 0L)
+				bzero(alloc_ptr, size);
 			return alloc_ptr;
 		}
 	}
 
 	DHD_ERROR(("can't alloc section %d\n", section));
-	return 0;
+	return NULL;
 }
 
 int wifi_get_irq_number(unsigned long *irq_flags_ptr)
@@ -1923,7 +1972,7 @@ static int wifi_remove(struct platform_device *pdev)
 static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY)
 	bcmsdh_oob_intr_set(0);
 #endif /* (OOB_INTR_ONLY) */
 	return 0;
@@ -1932,7 +1981,7 @@ static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
 static int wifi_resume(struct platform_device *pdev)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 39)) && defined(OOB_INTR_ONLY)
 	if (dhd_os_check_if_up(bcmsdh_get_drvdata()))
 		bcmsdh_oob_intr_set(1);
 #endif /* (OOB_INTR_ONLY) */

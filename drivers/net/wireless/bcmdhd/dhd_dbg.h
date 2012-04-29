@@ -29,10 +29,15 @@
 
 #if defined(DHD_DEBUG) || defined(DHD_PRINT_DEBUG)
 
+<<<<<<< HEAD
 #define DHD_DEFAULT(args)   do {if ((dhd_msg_level & DHD_ERROR_VAL) && (net_ratelimit())) \
 							    printf args;} while (0)
 #define DHD_ERROR(args)	       do {if ((dhd_msg_level & DHD_ERROR_VAL) && (net_ratelimit())) \
 									wrnprintf args;} while (0)
+=======
+#define DHD_ERROR(args)		do {if ((dhd_msg_level & DHD_ERROR_VAL) && (net_ratelimit())) \
+							printf args;} while (0)
+>>>>>>> 987edea... Linux 3.0.30
 #define DHD_TRACE(args)		do {if (dhd_msg_level & DHD_TRACE_VAL) printf args;} while (0)
 #define DHD_INFO(args)		do {if (dhd_msg_level & DHD_INFO_VAL) printf args;} while (0)
 #define DHD_DATA(args)		do {if (dhd_msg_level & DHD_DATA_VAL) printf args;} while (0)

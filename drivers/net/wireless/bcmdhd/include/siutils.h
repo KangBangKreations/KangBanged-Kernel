@@ -22,7 +22,11 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
+<<<<<<< HEAD
  * $Id: siutils.h 275703 2011-08-04 20:20:27Z $
+=======
+ * $Id: siutils.h 285387 2011-09-21 18:38:37Z $
+>>>>>>> 987edea... Linux 3.0.30
  */
 
 
@@ -58,6 +62,7 @@ struct si_pub {
 
 
 typedef const struct si_pub si_t;
+
 
 
 #define	SI_OSH		NULL	
@@ -216,6 +221,7 @@ extern int si_corepciid(si_t *sih, uint func, uint16 *pcivendor, uint16 *pcidevi
 #define si_seci(sih) 0
 static INLINE void * si_seci_init(si_t *sih, uint8 use_seci) {return NULL;}
 #define si_seci_down(sih) do { } while (0)
+<<<<<<< HEAD
 
 
 extern bool si_is_otp_disabled(si_t *sih);
@@ -228,6 +234,20 @@ extern bool si_is_sprom_enabled(si_t *sih);
 extern void si_sprom_enable(si_t *sih, bool enable);
 
 
+=======
+
+
+extern bool si_is_otp_disabled(si_t *sih);
+extern bool si_is_otp_powered(si_t *sih);
+extern void si_otp_power(si_t *sih, bool on);
+
+
+extern bool si_is_sprom_available(si_t *sih);
+extern bool si_is_sprom_enabled(si_t *sih);
+extern void si_sprom_enable(si_t *sih, bool enable);
+
+
+>>>>>>> 987edea... Linux 3.0.30
 extern int si_cis_source(si_t *sih);
 #define CIS_DEFAULT	0
 #define CIS_SROM	1
@@ -269,5 +289,6 @@ extern uint32 si_pciereg(si_t *sih, uint32 offset, uint32 mask, uint32 val, uint
 extern uint32 si_pcieserdesreg(si_t *sih, uint32 mdioslave, uint32 offset, uint32 mask, uint32 val);
 
 char *si_getnvramflvar(si_t *sih, const char *name);
+
 
 #endif	

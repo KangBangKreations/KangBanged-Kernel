@@ -20,7 +20,11 @@
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
+<<<<<<< HEAD
  * $Id: bcmevent.c 275693 2011-08-04 19:59:34Z $
+=======
+ * $Id: bcmevent.c,v 1.8.2.7 2011-02-01 06:23:39 $
+>>>>>>> 987edea... Linux 3.0.30
  */
 
 #include <typedefs.h>
@@ -29,7 +33,11 @@
 #include <proto/bcmeth.h>
 #include <proto/bcmevent.h>
 
+<<<<<<< HEAD
 #if WLC_E_LAST != 90
+=======
+#if WLC_E_LAST != 87
+>>>>>>> 987edea... Linux 3.0.30
 #error "You need to add an entry to bcmevent_names[] for the new event"
 #endif
 
@@ -123,9 +131,14 @@ const bcmevent_name_t bcmevent_names[] = {
 #ifdef SOFTAP
 	{ WLC_E_GTK_PLUMBED, "GTK_PLUMBED" },
 #endif
+<<<<<<< HEAD
 	{ WLC_E_RELOAD, "RELOAD_EVENT" },
 	{ WLC_E_RSSI_LOW, "RSSI_LOW_EVENT" },
 	{ WLC_E_ASSOCREQ_IE, "ASSOC_REQ_EVENT" }
+=======
+	{ WLC_E_ASSOC_REQ_IE, "ASSOC_REQ_IE" },
+	{ WLC_E_ASSOC_RESP_IE, "ASSOC_RESP_IE" }
+>>>>>>> 987edea... Linux 3.0.30
 };
 
 

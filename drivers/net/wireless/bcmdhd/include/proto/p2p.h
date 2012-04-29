@@ -21,7 +21,11 @@
  *
  * Fundamental types and constants relating to WFA P2P (aka WiFi Direct)
  *
+<<<<<<< HEAD
  * $Id: p2p.h,v 9.17.2.4 2010-12-15 21:41:21 $
+=======
+ * $Id: p2p.h 277737 2011-08-16 17:54:59Z $
+>>>>>>> 987edea... Linux 3.0.30
  */
 
 #ifndef _P2P_H_
