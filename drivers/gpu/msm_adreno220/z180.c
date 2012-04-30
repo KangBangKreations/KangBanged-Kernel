@@ -197,11 +197,9 @@ static struct z180_device device_2d1 = {
 		.ftbl = &z180_functable,
 		.display_off = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
-#if 0
 			.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING,
 			.suspend = kgsl_early_suspend_driver,
 			.resume = kgsl_late_resume_driver,
-#endif
 #endif
 		},
 	},
@@ -330,7 +328,7 @@ static void addmarker(struct z180_ringbuffer *rb, unsigned int index)
 static void addcmd(struct z180_ringbuffer *rb, unsigned int index,
 			unsigned int cmd, unsigned int nextcnt)
 {
-	char *ptr = (char *)(rb->cmdbufdesc.hostptr);
+	char * ptr = (char *)(rb->cmdbufdesc.hostptr);
 	unsigned int *p = (unsigned int *)(ptr + (rb_offset(index)
 			   + (Z180_MARKER_SIZE * sizeof(unsigned int))));
 
@@ -346,8 +344,6 @@ static void z180_cmdstream_start(struct kgsl_device *device)
 	struct z180_device *z180_dev = Z180_DEVICE(device);
 	unsigned int cmd = VGV3_NEXTCMD_JUMP << VGV3_NEXTCMD_NEXTCMD_FSHIFT;
 
-	KGSL_PWR_WARN(device, "reset timestamp from(%d, %d), device %d\n",
-	    z180_dev->timestamp, z180_dev->current_timestamp, device->id);
 	z180_dev->timestamp = 0;
 	z180_dev->current_timestamp = 0;
 
@@ -464,6 +460,7 @@ z180_cmdstream_issueibcmds(struct kgsl_device_private *dev_priv,
 	z180_dev->ringbuffer.prevctx = context->id;
 
 	addcmd(&z180_dev->ringbuffer, index, cmd + ofs, cnt);
+	kgsl_pwrscale_busy(device);
 
 	/* Make sure the next ringbuffer entry has a marker */
 	addmarker(&z180_dev->ringbuffer, nextindex);
@@ -527,6 +524,7 @@ static int __devinit z180_probe(struct platform_device *pdev)
 		goto error_close_ringbuffer;
 
 	kgsl_pwrscale_init(device);
+	kgsl_pwrscale_attach_policy(device, Z180_DEFAULT_PWRSCALE_POLICY);
 
 	return status;
 
@@ -826,15 +824,6 @@ static int z180_wait(struct kgsl_device *device,
 {
 	int status = -EINVAL;
 	long timeout = 0;
-	unsigned int ts_processed;
-
-	ts_processed = device->ftbl->readtimestamp(device,
-		KGSL_TIMESTAMP_RETIRED);
-	if (ts_processed == 0 && timestamp > 10) {
-		KGSL_DRV_ERR(device, "QCT BUG: "
-		    "timestamp was reset and we are looking for %d\n",
-		    timestamp);
-	}
 
 	timeout = wait_io_event_interruptible_timeout(
 			device->wait_queue,
@@ -871,17 +860,17 @@ static void z180_power_stats(struct kgsl_device *device,
 			    struct kgsl_power_stats *stats)
 {
 	struct kgsl_pwrctrl *pwr = &device->pwrctrl;
+	s64 tmp = ktime_to_us(ktime_get());
 
 	if (pwr->time == 0) {
-		pwr->time = ktime_to_us(ktime_get());
+		pwr->time = tmp;
 		stats->total_time = 0;
 		stats->busy_time = 0;
 	} else {
-		s64 tmp;
-		tmp = ktime_to_us(ktime_get());
 		stats->total_time = tmp - pwr->time;
-		stats->busy_time = tmp - pwr->time;
 		pwr->time = tmp;
+		stats->busy_time = tmp - device->on_time;
+		device->on_time = tmp;
 	}
 }
 

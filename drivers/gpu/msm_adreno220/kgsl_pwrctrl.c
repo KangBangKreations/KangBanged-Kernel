@@ -66,8 +66,22 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 		struct kgsl_pwrlevel *pwrlevel = &pwr->pwrlevels[new_level];
 		pwr->active_pwrlevel = new_level;
 		if ((test_bit(KGSL_PWRFLAGS_CLK_ON, &pwr->power_flags)) ||
+<<<<<<< HEAD
 			(device->state == KGSL_STATE_NAP))
 			clk_set_rate(pwr->grp_clks[0], pwrlevel->gpu_freq);
+=======
+			(device->state == KGSL_STATE_NAP)) {
+			/*
+			 * On some platforms, instability is caused on
+			 * changing clock freq when the core is busy.
+			 * Idle the gpu core before changing the clock freq.
+			 */
+			if (pwr->idle_needed == true)
+				device->ftbl->idle(device,
+						KGSL_TIMEOUT_DEFAULT);
+			clk_set_rate(pwr->grp_clks[0], pwrlevel->gpu_freq);
+		}
+>>>>>>> 1d499b0... update video and gpu drivers from Codeaurora
 		if (test_bit(KGSL_PWRFLAGS_AXI_ON, &pwr->power_flags)) {
 			if (pwr->pcl)
 				msm_bus_scale_client_update_request(pwr->pcl,
@@ -275,7 +289,7 @@ static int kgsl_pwrctrl_gpubusy_show(struct device *dev,
 DEVICE_ATTR(gpuclk, 0644, kgsl_pwrctrl_gpuclk_show, kgsl_pwrctrl_gpuclk_store);
 DEVICE_ATTR(max_gpuclk, 0644, kgsl_pwrctrl_max_gpuclk_show,
 	kgsl_pwrctrl_max_gpuclk_store);
-DEVICE_ATTR(pwrnap, 0644, kgsl_pwrctrl_pwrnap_show, kgsl_pwrctrl_pwrnap_store);
+DEVICE_ATTR(pwrnap, 0664, kgsl_pwrctrl_pwrnap_show, kgsl_pwrctrl_pwrnap_store);
 DEVICE_ATTR(idle_timer, 0644, kgsl_pwrctrl_idle_timer_show,
 	kgsl_pwrctrl_idle_timer_store);
 DEVICE_ATTR(gpubusy, 0644, kgsl_pwrctrl_gpubusy_show,
@@ -499,6 +513,7 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 	pwr->power_flags = 0;
 
 	pwr->nap_allowed = pdata->nap_allowed;
+	pwr->idle_needed = pdata->idle_needed;
 	pwr->interval_timeout = pdata->idle_timeout;
 	pwr->ebi1_clk = clk_get(&pdev->dev, "bus_clk");
 	if (IS_ERR(pwr->ebi1_clk))
@@ -870,6 +885,7 @@ void kgsl_pwrctrl_disable(struct kgsl_device *device)
 }
 EXPORT_SYMBOL(kgsl_pwrctrl_disable);
 
+<<<<<<< HEAD
 void kgsl_pwrctrl_stop_work(struct kgsl_device *device)
 {
 	del_timer_sync(&device->idle_timer);
@@ -880,6 +896,8 @@ void kgsl_pwrctrl_stop_work(struct kgsl_device *device)
 }
 EXPORT_SYMBOL(kgsl_pwrctrl_stop_work);
 
+=======
+>>>>>>> 1d499b0... update video and gpu drivers from Codeaurora
 void kgsl_pwrctrl_set_state(struct kgsl_device *device, unsigned int state)
 {
 	trace_kgsl_pwr_set_state(device, state);
