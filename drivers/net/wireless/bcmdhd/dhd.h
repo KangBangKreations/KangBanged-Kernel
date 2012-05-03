@@ -24,7 +24,11 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
+<<<<<<< HEAD
  * $Id: dhd.h 285377 2011-09-21 17:57:59Z $
+=======
+ * $Id: dhd.h 328934 2012-04-23 05:15:42Z $
+>>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
  */
 
 /****************
@@ -86,6 +90,9 @@ enum dhd_bus_state {
 
 #define DHD_SCAN_ACTIVE_TIME	 40 /* ms : Embedded default Active setting from DHD Driver */
 #define DHD_SCAN_PASSIVE_TIME	130 /* ms: Embedded default Passive setting from DHD Driver */
+
+#define DHD_BEACON_TIMEOUT_NORMAL	4
+#define DHD_BEACON_TIMEOUT_HIGH		10
 
 enum dhd_bus_wake_state {
 	WAKE_LOCK_OFF,

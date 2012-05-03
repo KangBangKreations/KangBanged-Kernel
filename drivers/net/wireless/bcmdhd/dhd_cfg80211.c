@@ -35,6 +35,7 @@ extern struct wl_priv *wlcfg_drv_priv;
 static int dhd_dongle_up = FALSE;
 
 static s32 wl_dongle_up(struct net_device *ndev, u32 up);
+<<<<<<< HEAD
 static s32 wl_dongle_power(struct net_device *ndev, u32 power_mode);
 static s32 wl_dongle_glom(struct net_device *ndev, u32 glom, u32 dongle_align);
 static s32 wl_dongle_roam(struct net_device *ndev, u32 roamvar,	u32 bcn_timeout);
@@ -42,6 +43,8 @@ static s32 wl_dongle_scantime(struct net_device *ndev, s32 scan_assoc_time, s32 
 static s32 wl_dongle_offload(struct net_device *ndev, s32 arpoe, s32 arp_ol);
 static s32 wl_pattern_atoh(s8 *src, s8 *dst);
 static s32 wl_dongle_filter(struct net_device *ndev, u32 filter_mode);
+=======
+>>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 
 /**
  * Function implementations
@@ -67,6 +70,7 @@ s32 dhd_cfg80211_down(struct wl_priv *wl)
 
 static s32 wl_dongle_up(struct net_device *ndev, u32 up)
 {
+<<<<<<< HEAD
 	s32 err = 0;
 
 	err = wldev_ioctl(ndev, WLC_UP, &up, sizeof(up), true);
@@ -75,6 +79,25 @@ static s32 wl_dongle_up(struct net_device *ndev, u32 up)
 	}
 	return err;
 }
+=======
+	dhd_pub_t *dhd =  (dhd_pub_t *)(wl->pub);
+	int bcn_timeout = DHD_BEACON_TIMEOUT_HIGH;
+	char iovbuf[30];
+
+	dhd->op_mode |= val;
+	WL_ERR(("Set : op_mode=%d\n", dhd->op_mode));
+
+#ifdef ARP_OFFLOAD_SUPPORT
+	/* IF P2P is enabled, disable arpoe */
+	dhd_arp_offload_set(dhd, 0);
+	dhd_arp_offload_enable(dhd, false);
+#endif /* ARP_OFFLOAD_SUPPORT */
+
+	/* Setup timeout if Beacons are lost and roam is off to report link down */
+	bcm_mkiovar("bcn_timeout", (char *)&bcn_timeout, 4, iovbuf, sizeof(iovbuf));
+	dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
+
+>>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 
 static s32 wl_dongle_power(struct net_device *ndev, u32 power_mode)
 {
@@ -91,9 +114,28 @@ static s32 wl_dongle_power(struct net_device *ndev, u32 power_mode)
 static s32
 wl_dongle_glom(struct net_device *ndev, u32 glom, u32 dongle_align)
 {
+<<<<<<< HEAD
 	s8 iovbuf[WL_EVENTING_MASK_LEN + 12];
 
 	s32 err = 0;
+=======
+	dhd_pub_t *dhd =  (dhd_pub_t *)(wl->pub);
+	int bcn_timeout = DHD_BEACON_TIMEOUT_NORMAL;
+	char iovbuf[30];
+
+	dhd->op_mode &= ~CONCURENT_MASK;
+	WL_ERR(("Clean : op_mode=%d\n", dhd->op_mode));
+
+#ifdef ARP_OFFLOAD_SUPPORT
+	/* IF P2P is disabled, enable arpoe back for STA mode. */
+	dhd_arp_offload_set(dhd, dhd_arp_mode);
+	dhd_arp_offload_enable(dhd, true);
+#endif /* ARP_OFFLOAD_SUPPORT */
+
+	/* Setup timeout if Beacons are lost and roam is off to report link down */
+	bcm_mkiovar("bcn_timeout", (char *)&bcn_timeout, 4, iovbuf, sizeof(iovbuf));
+	dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
+>>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 
 	/* Match Host and Dongle rx alignment */
 	bcm_mkiovar("bus:txglomalign", (char *)&dongle_align, 4, iovbuf,

@@ -21,7 +21,11 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
+<<<<<<< HEAD
  * $Id: dhd_sdio.c 288105 2011-10-06 01:58:02Z $
+=======
+ * $Id: dhd_sdio.c 326662 2012-04-10 06:38:08Z $
+>>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
  */
 
 #include <typedefs.h>
@@ -4622,6 +4626,17 @@ clkwait:
 
 	if (TXCTLOK(bus) && bus->ctrl_frame_stat && (bus->clkstate == CLK_AVAIL))  {
 		int ret, i;
+<<<<<<< HEAD
+=======
+		uint8* frame_seq = bus->ctrl_frame_buf + SDPCM_FRAMETAG_LEN;
+
+		if (*frame_seq != bus->tx_seq) {
+			DHD_INFO(("%s IOCTL frame seq lag detected!"
+				" frm_seq:%d != bus->tx_seq:%d, corrected\n",
+				__FUNCTION__, *frame_seq, bus->tx_seq));
+			*frame_seq = bus->tx_seq;
+		}
+>>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 
 		ret = dhd_bcmsdh_send_buf(bus, bcmsdh_cur_sbwad(sdh), SDIO_FUNC_2, F2SYNC,
 		                      (uint8 *)bus->ctrl_frame_buf, (uint32)bus->ctrl_frame_len,
