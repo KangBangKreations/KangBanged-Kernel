@@ -49,7 +49,28 @@ static int __init force_charge_mode_init(void)
 {
   int retval;
 
+#ifdef CONFIG_CMDLINE_OPTIONS
+static int __init cy8c_read_fstchrg_cmdline(char *fstchrg)
+{
+  if (strcmp(fstchrg, "1") == 0) {
+    printk(KERN_INFO "[cmdline_fstchrg]: FastCharge enabled. | fstchrg='%s'", fstchrg);
+  force_charge_mode = 1;
+  } else if (strcmp(fstchrg, "0") == 0) {
+    printk(KERN_INFO "[cmdline_fstchrg]: FastCharge disabled. | fstchrg='%s'", fstchrg);
   force_charge_mode = 0;
+  } else {
+    printk(KERN_INFO "[cmdline_fstchrg]: No valid input found. FastCharge disabled. | fstchrg='%s'", fstchrg);
+  force_charge_mode = 0;
+  }
+  return 1;
+}
+__setup("fstchrg=", cy8c_read_fstchrg_cmdline);
+
+#else
+
+  force_charge_mode = 0;
+
+#endif
 
         force_charge_mode_kobj = kobject_create_and_add("fast_charge", kernel_kobj);
         if (!force_charge_mode_kobj) {
