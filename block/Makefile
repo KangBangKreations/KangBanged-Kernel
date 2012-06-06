@@ -14,10 +14,6 @@ obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
 obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
 obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
 obj-$(CONFIG_IOSCHED_BFQ)	+= bfq-iosched.o
-<<<<<<< HEAD
-=======
-obj-$(CONFIG_IOSCHED_SIO)  += sio-iosched.o
->>>>>>> 7a6c93c... Add VR I/O Scheduler
 obj-$(CONFIG_IOSCHED_VR)        += vr-iosched.o
 
 obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
