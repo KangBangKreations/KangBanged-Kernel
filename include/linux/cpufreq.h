@@ -25,13 +25,6 @@
 #define CPUFREQ_NAME_LEN 16
 
 
-<<<<<<< HEAD
-=======
-/* cmdline_khz variables */
-extern uint32_t cmdline_maxkhz, cmdline_minkhz;
-extern char cmdline_gov;
-
->>>>>>> a80c5a2... cmdline_khz: Move extern variables to cpufreq.h for global inclusion
 /*********************************************************************
  *                     CPUFREQ NOTIFIER INTERFACE                    *
  *********************************************************************/
