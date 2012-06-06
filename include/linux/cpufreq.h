@@ -25,12 +25,6 @@
 #define CPUFREQ_NAME_LEN 16
 
 
-<<<<<<< HEAD
-=======
-/* cmdline_khz variables */
-extern char cmdline_gov;
-
->>>>>>> 40bce6e... cmdline_khz: Add parsing for governor cmdline option
 /*********************************************************************
  *                     CPUFREQ NOTIFIER INTERFACE                    *
  *********************************************************************/
