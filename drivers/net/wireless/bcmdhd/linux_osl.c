@@ -21,11 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
-<<<<<<< HEAD
  * $Id: linux_osl.c 281175 2011-09-01 09:46:46Z $
-=======
- * $Id: linux_osl.c,v 1.168.2.7 2011-01-27 17:01:13 $
->>>>>>> 987edea... Linux 3.0.30
  */
 
 
@@ -51,7 +47,7 @@
 #define OS_HANDLE_MAGIC		0x1234abcd	
 #define BCM_MEM_FILENAME_LEN 	24		
 
-#ifdef CONFIG_DHD_USE_STATIC_BUF
+#ifdef DHD_USE_STATIC_BUF
 #define STATIC_BUF_MAX_NUM	16
 #define STATIC_BUF_SIZE		(PAGE_SIZE * 2)
 #define STATIC_BUF_TOTAL_LEN	(STATIC_BUF_MAX_NUM * STATIC_BUF_SIZE)
@@ -74,7 +70,7 @@ typedef struct bcm_static_pkt {
 } bcm_static_pkt_t;
 
 static bcm_static_pkt_t *bcm_static_skb = 0;
-#endif
+#endif 
 
 typedef struct bcm_mem_link {
 	struct bcm_mem_link *prev;
@@ -220,7 +216,7 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 			break;
 	}
 
-#if defined(CONFIG_DHD_USE_STATIC_BUF)
+#if defined(DHD_USE_STATIC_BUF)
 	if (!bcm_static_buf) {
 		if (!(bcm_static_buf = (bcm_static_buf_t *)dhd_os_prealloc(osh, 3, STATIC_BUF_SIZE+
 			STATIC_BUF_TOTAL_LEN))) {
@@ -231,6 +227,7 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 		}
 		else
 			printf("alloc static buf at %x!\n", (unsigned int)bcm_static_buf);
+
 
 		sema_init(&bcm_static_buf->static_sem, 1);
 
@@ -252,7 +249,7 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 
 		sema_init(&bcm_static_skb->osl_pkt_sem, 1);
 	}
-#endif
+#endif 
 
 	return osh;
 }
@@ -402,7 +399,7 @@ osl_ctfpool_stats(osl_t *osh, void *b)
 	if ((osh == NULL) || (osh->ctfpool == NULL))
 		return;
 
-#ifdef CONFIG_DHD_USE_STATIC_BUF
+#ifdef DHD_USE_STATIC_BUF
 	if (bcm_static_buf) {
 		bcm_static_buf = 0;
 	}
@@ -564,20 +561,15 @@ osl_pktfree(osl_t *osh, void *p, bool send)
 	}
 }
 
-#ifdef CONFIG_DHD_USE_STATIC_BUF
+#ifdef DHD_USE_STATIC_BUF
 void *
 osl_pktget_static(osl_t *osh, uint len)
 {
 	int i;
 	struct sk_buff *skb;
 
-<<<<<<< HEAD
 	if (len > (PAGE_SIZE * 2)) {
 		printf("%s: attempt to allocate huge packet (0x%x)\n", __FUNCTION__, len);
-=======
-	if (!bcm_static_skb || (len > (PAGE_SIZE * 2))) {
-		printk("%s: attempt to allocate huge packet (0x%x)\n", __FUNCTION__, len);
->>>>>>> 987edea... Linux 3.0.30
 		return osl_pktget(osh, len);
 	}
 
@@ -591,10 +583,10 @@ osl_pktget_static(osl_t *osh, uint len)
 
 		if (i != STATIC_PKT_MAX_NUM) {
 			bcm_static_skb->pkt_use[i] = 1;
+			up(&bcm_static_skb->osl_pkt_sem);
 			skb = bcm_static_skb->skb_4k[i];
 			skb->tail = skb->data + len;
 			skb->len = len;
-			up(&bcm_static_skb->osl_pkt_sem);
 			return skb;
 		}
 	}
@@ -607,10 +599,10 @@ osl_pktget_static(osl_t *osh, uint len)
 
 	if (i != STATIC_PKT_MAX_NUM) {
 		bcm_static_skb->pkt_use[i+STATIC_PKT_MAX_NUM] = 1;
+		up(&bcm_static_skb->osl_pkt_sem);
 		skb = bcm_static_skb->skb_8k[i];
 		skb->tail = skb->data + len;
 		skb->len = len;
-		up(&bcm_static_skb->osl_pkt_sem);
 		return skb;
 	}
 
@@ -624,14 +616,9 @@ osl_pktfree_static(osl_t *osh, void *p, bool send)
 {
 	int i;
 
-	if (!bcm_static_skb) {
-		osl_pktfree(osh, p, send);
-		return;
-	}
-
-	down(&bcm_static_skb->osl_pkt_sem);
 	for (i = 0; i < STATIC_PKT_MAX_NUM; i++) {
 		if (p == bcm_static_skb->skb_4k[i]) {
+			down(&bcm_static_skb->osl_pkt_sem);
 			bcm_static_skb->pkt_use[i] = 0;
 			up(&bcm_static_skb->osl_pkt_sem);
 			return;
@@ -640,15 +627,14 @@ osl_pktfree_static(osl_t *osh, void *p, bool send)
 
 	for (i = 0; i < STATIC_PKT_MAX_NUM; i++) {
 		if (p == bcm_static_skb->skb_8k[i]) {
+			down(&bcm_static_skb->osl_pkt_sem);
 			bcm_static_skb->pkt_use[i + STATIC_PKT_MAX_NUM] = 0;
 			up(&bcm_static_skb->osl_pkt_sem);
 			return;
 		}
 	}
-	up(&bcm_static_skb->osl_pkt_sem);
 
-	osl_pktfree(osh, p, send);
-	return;
+	return osl_pktfree(osh, p, send);
 }
 #endif 
 

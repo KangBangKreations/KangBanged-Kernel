@@ -325,12 +325,7 @@ int ecryptfs_read(char *data, loff_t offset, size_t size,
 		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
 		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
 		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
-		loff_t total_remaining_bytes = ((offset + size) - pos);
-
-		if (fatal_signal_pending(current)) {
-			rc = -EINTR;
-			break;
-		}
+		size_t total_remaining_bytes = ((offset + size) - pos);
 
 		if (num_bytes > total_remaining_bytes)
 			num_bytes = total_remaining_bytes;

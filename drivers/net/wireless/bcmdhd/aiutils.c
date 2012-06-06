@@ -22,11 +22,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
-<<<<<<< HEAD
  * $Id: aiutils.c 275693 2011-08-04 19:59:34Z $
-=======
- * $Id: aiutils.c,v 1.26.2.1 2010-03-09 18:41:21 $
->>>>>>> 987edea... Linux 3.0.30
  */
 
 

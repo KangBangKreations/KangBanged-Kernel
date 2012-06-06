@@ -5927,11 +5927,7 @@ static int msm_sdcc_setup_vreg(int dev_id, unsigned char enable)
 
 	if (curr->sts == enable)
 		goto out;
-<<<<<<< HEAD
 
-=======
-	mdelay(5);
->>>>>>> 987edea... Linux 3.0.30
 	if (curr_vdd_reg) {
 		if (enable) {
 			if (dev_id == 3)
@@ -5971,10 +5967,7 @@ out:
 	return rc;
 }
 
-<<<<<<< HEAD
 #define GPIO_SDC3_WP_SWITCH (GPIO_EXPANDER_GPIO_BASE + (16 * 1) + 6)
-=======
->>>>>>> 987edea... Linux 3.0.30
 
 static u32 msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 {

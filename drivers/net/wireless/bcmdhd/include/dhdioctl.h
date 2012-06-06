@@ -25,11 +25,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
-<<<<<<< HEAD
  * $Id: dhdioctl.h 275703 2011-08-04 20:20:27Z $
-=======
- * $Id: dhdioctl.h 323572 2012-03-26 06:28:14Z $
->>>>>>> 987edea... Linux 3.0.30
  */
 
 #ifndef _dhdioctl_h_
@@ -91,8 +87,6 @@ enum {
 #define DHD_BTA_VAL	0x1000
 #define DHD_ISCAN_VAL	0x2000
 #define DHD_ARPOE_VAL	0x4000
-#define DHD_REORDER_VAL 0x8000
-#define DHD_WL_VAL	0x10000
 
 #ifdef SDTEST
 /* For pktgen iovar */
