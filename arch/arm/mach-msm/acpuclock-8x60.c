@@ -40,14 +40,14 @@
 #define COMPLEX_SLEW		7
 
 /* PLL calibration limits.
- * The PLL hardware is capable of 384MHz to 1512MHz. The L_VALs
+ * The PLL hardware is capable of 192MHz to 1512MHz. The L_VALs
  * used for calibration should respect these limits. */
 #define L_VAL_SCPLL_CAL_MIN	0x08 /* =  432 MHz with 27MHz source */
 #define L_VAL_SCPLL_CAL_MAX	0x24 /* = 1944 MHz with 27MHz source */
 
-#define MAX_VDD_SC		1525000 /* uV */
+#define MAX_VDD_SC		1450000 /* uV */
 #define MIN_VDD_SC		 750000 /* uV */
-#define MAX_VDD_MEM		1525000 /* uV */
+#define MAX_VDD_MEM		1450000 /* uV */
 #define MAX_VDD_DIG		1300000 /* uV */
 #define MAX_AXI			 310500 /* KHz */
 #define SCPLL_LOW_VDD_FMAX	 594000 /* KHz */
@@ -197,13 +197,6 @@ static struct clkctl_l2_speed l2_freq_tbl_v2[] = {
 	[20] = {1458000,  1, 0x1B, 1225000, 1275000, 4},
 	[21] = {1512000,  1, 0x1C, 1225000, 1275000, 4},
 	[22] = {1566000,  1, 0x1D, 1225000, 1275000, 4},
-	[23] = {1620000,  1, 0x1E, 1225000, 1275000, 4},
-	[24] = {1674000,  1, 0x1F, 1250000, 1300000, 4},
-	[25] = {1728000,  1, 0x20, 1275000, 1325000, 4},
-	[26] = {1782000,  1, 0x21, 1325000, 1375000, 4},
-	[27] = {1836000,  1, 0x22, 1375000, 1425000, 4},
-	[28] = {1890000,  1, 0x23, 1425000, 1475000, 4},
-	[28] = {1890000,  1, 0x23, 1475000, 1525000, 4},
 };
 
 #define L2(x) (&l2_freq_tbl_v2[(x)])
@@ -235,13 +228,13 @@ static struct clkctl_acpu_speed acpu_freq_tbl_oc[] = {
   { {1, 1}, 1458000,  ACPU_SCPLL, 0, 0, 1, 0x1B, L2(20), 1150000, 0x03006000},
   { {1, 1}, 1512000,  ACPU_SCPLL, 0, 0, 1, 0x1C, L2(21), 1175000, 0x03006000},
   { {1, 1}, 1566000,  ACPU_SCPLL, 0, 0, 1, 0x1D, L2(22), 1200000, 0x03006000},
-  { {1, 1}, 1620000,  ACPU_SCPLL, 0, 0, 1, 0x1E, L2(23), 1225000, 0x03006000},
-  { {1, 1}, 1674000,  ACPU_SCPLL, 0, 0, 1, 0x1F, L2(24), 1250000, 0x03006000},
-  { {1, 1}, 1728000,  ACPU_SCPLL, 0, 0, 1, 0x20, L2(25), 1275000, 0x03006000},
-  { {1, 1}, 1782000,  ACPU_SCPLL, 0, 0, 1, 0x21, L2(26), 1325000, 0x03006000},
-  { {1, 1}, 1836000,  ACPU_SCPLL, 0, 0, 1, 0x22, L2(27), 1375000, 0x03006000},
-  { {1, 1}, 1890000,  ACPU_SCPLL, 0, 0, 1, 0x23, L2(28), 1425000, 0x03006000},
-  { {1, 1}, 1944000,  ACPU_SCPLL, 0, 0, 1, 0x24, L2(29), 1475000, 0x03006000},
+  { {1, 1}, 1620000,  ACPU_SCPLL, 0, 0, 1, 0x1E, L2(22), 1225000, 0x03006000},
+  { {1, 1}, 1674000,  ACPU_SCPLL, 0, 0, 1, 0x1F, L2(22), 1250000, 0x03006000},
+  { {1, 1}, 1728000,  ACPU_SCPLL, 0, 0, 1, 0x20, L2(22), 1275000, 0x03006000},
+  { {1, 1}, 1782000,  ACPU_SCPLL, 0, 0, 1, 0x21, L2(22), 1300000, 0x03006000},
+  { {1, 1}, 1836000,  ACPU_SCPLL, 0, 0, 1, 0x22, L2(22), 1325000, 0x03006000},
+  { {1, 1}, 1890000,  ACPU_SCPLL, 0, 0, 1, 0x23, L2(22), 1350000, 0x03006000},
+  { {1, 1}, 1944000,  ACPU_SCPLL, 0, 0, 1, 0x24, L2(22), 1375000, 0x03006000},
   { {0, 0}, 0 },
 };
 
