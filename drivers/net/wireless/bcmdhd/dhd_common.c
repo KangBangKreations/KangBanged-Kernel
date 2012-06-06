@@ -21,11 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
-<<<<<<< HEAD
  * $Id: dhd_common.c 288105 2011-10-06 01:58:02Z $
-=======
- * $Id: dhd_common.c 329682 2012-04-26 09:20:38Z $
->>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
  */
 #include <typedefs.h>
 #include <osl.h>
@@ -1003,9 +999,6 @@ wl_host_event(dhd_pub_t *dhd_pub, int *ifidx, void *pktdata,
 	datalen = ntoh32_ua((void *)&event->datalen);
 	evlen = datalen + sizeof(bcm_event_t);
 
-	DHD_TRACE(("RX: event_type:%d flags:%d status:%d reason:%d \n",
-								type, flags, status, reason));
-
 	switch (type) {
 #ifdef PROP_TXSTATUS
 	case WLC_E_FIFO_CREDIT_MAP:
@@ -1844,7 +1837,6 @@ fail:
 
 /*
  * returns = TRUE if associated, FALSE if not associated
- * third paramter retval can return error from error
  */
 bool dhd_is_associated(dhd_pub_t *dhd, void *bss_buf)
 {
@@ -2005,10 +1997,6 @@ dhd_pno_enable(dhd_pub_t *dhd, int pfn_enabled)
 		DHD_ERROR(("%s pno is NOT enable : called in assoc mode , ignore\n", __FUNCTION__));
 		//return ret;
 	}
-<<<<<<< HEAD
-=======
-#endif /* !WL_SCHED_SCAN */
->>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 
 	/* Enable/disable PNO */
 	if ((ret = bcm_mkiovar("pfn", (char *)&pfn_enabled, 4, iovbuf, sizeof(iovbuf))) > 0) {

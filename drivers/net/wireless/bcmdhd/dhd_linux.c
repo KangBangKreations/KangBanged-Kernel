@@ -22,11 +22,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
-<<<<<<< HEAD
  * $Id: dhd_linux.c 288104 2011-10-06 01:54:08Z $
-=======
- * $Id: dhd_linux.c 329682 2012-04-26 09:20:38Z $
->>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
  */
 
 #include <typedefs.h>
@@ -1783,7 +1779,6 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 			*/
 			((athost_wl_status_info_t*)dhdp->wlfc_state)->stats.wlfc_header_only_pkt++;
 			PKTFREE(dhdp->osh, pktbuf, TRUE);
-			DHD_TRACE(("RX: wlfc header \n"));
 			continue;
 		}
 #endif
@@ -2899,9 +2894,6 @@ dhd_open(struct net_device *net)
 
 	OLD_MOD_INC_USE_COUNT;
 exit:
-	if (ret)
-		dhd_stop(net);
-
 	DHD_OS_WAKE_UNLOCK(&dhd->pub);
 	return ret;
 }
@@ -3421,14 +3413,8 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	uint power_mode = PM_FAST;
 	uint32 dongle_align = DHD_SDALIGN;
 	uint32 glom = 0;
-<<<<<<< HEAD
 	uint bcn_timeout = 4;
 	uint retry_max = 10;
-=======
-	uint bcn_timeout = DHD_BEACON_TIMEOUT_NORMAL;
-
-	uint retry_max = 3;
->>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 #if defined(ARP_OFFLOAD_SUPPORT)
 	int arpoe = 0; /* Do not enable ARP offload feature since it has bug */
 #endif

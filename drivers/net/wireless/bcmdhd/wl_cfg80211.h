@@ -142,13 +142,7 @@ do {									\
 #define IFACE_MAX_CNT 		2
 
 #define WL_SCAN_TIMER_INTERVAL_MS	8000 /* Scan timeout */
-<<<<<<< HEAD
 #define WL_CHANNEL_SYNC_RETRY 	5
-=======
-#define WL_CHANNEL_SYNC_RETRY 	3
-#define WL_ACT_FRAME_RETRY 4
-
->>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 #define WL_INVALID 		-1
 
 /* driver status */
@@ -459,15 +453,6 @@ struct wl_priv {
 	bool p2p_supported;
 	struct btcoex_info *btcoex_info;
 	struct timer_list scan_timeout;   /* Timer for catch scan event timeout */
-<<<<<<< HEAD
-=======
-#ifdef WL_SCHED_SCAN
-	struct cfg80211_sched_scan_request *sched_scan_req;	/* scheduled scan req */
-#endif /* WL_SCHED_SCAN */
-	bool sched_scan_running;	/* scheduled scan req status */
-	u16 hostapd_chan;            /* remember chan requested by framework for hostapd  */
-	u16 deauth_reason;           /* Place holder to save deauth/disassoc reasons */
->>>>>>> 8bc461e... net: wireless: bcmdhd: Update to Version 5.90.195.61
 };
 
 
