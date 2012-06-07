@@ -12,7 +12,7 @@
  */
 
 #include <linux/vmalloc.h>
-
+#include <linux/delay.h>
 #include "kgsl.h"
 
 #include "adreno.h"
@@ -156,7 +156,7 @@ static void adreno_dump_regs(struct kgsl_device *device,
 	}
 }
 
-static void dump_ib(struct kgsl_device *device, char* buffId, uint32_t pt_base,
+static void dump_ib(struct kgsl_device *device, char *buffId, uint32_t pt_base,
 	uint32_t base_offset, uint32_t ib_base, uint32_t ib_size, bool dump)
 {
 	uint8_t *base_addr = adreno_convertaddr(device, pt_base,
@@ -200,7 +200,7 @@ static void dump_ib1(struct kgsl_device *device, uint32_t pt_base,
 
 	for (i = 0; i+3 < ib1_size; ) {
 		value = ib1_addr[i++];
-		if (adreno_cmd_is_ib(value)) {
+		if (value == cp_type3_packet(CP_INDIRECT_BUFFER_PFD, 2)) {
 			uint32_t ib2_base = ib1_addr[i++];
 			uint32_t ib2_size = ib1_addr[i++];
 
@@ -611,7 +611,7 @@ static int adreno_dump(struct kgsl_device *device)
 	i = 0;
 	for (read_idx = 0; read_idx < num_item; ) {
 		uint32_t this_cmd = rb_copy[read_idx++];
-		if (adreno_cmd_is_ib(this_cmd)) {
+		if (this_cmd == cp_type3_packet(CP_INDIRECT_BUFFER_PFD, 2)) {
 			uint32_t ib_addr = rb_copy[read_idx++];
 			uint32_t ib_size = rb_copy[read_idx++];
 			dump_ib1(device, cur_pt_base, (read_idx-3)<<2, ib_addr,
@@ -654,7 +654,8 @@ static int adreno_dump(struct kgsl_device *device)
 		for (read_idx = NUM_DWORDS_OF_RINGBUFFER_HISTORY;
 			read_idx >= 0; --read_idx) {
 			uint32_t this_cmd = rb_copy[read_idx];
-			if (adreno_cmd_is_ib(this_cmd)) {
+			if (this_cmd == cp_type3_packet(
+				CP_INDIRECT_BUFFER_PFD, 2)) {
 				uint32_t ib_addr = rb_copy[read_idx+1];
 				uint32_t ib_size = rb_copy[read_idx+2];
 				if (ib_size && cp_ib1_base == ib_addr) {
@@ -705,7 +706,6 @@ end:
 
 int adreno_postmortem_dump(struct kgsl_device *device, int manual)
 {
-	bool saved_nap;
 	struct kgsl_pwrctrl *pwr = &device->pwrctrl;
 
 	BUG_ON(device == NULL);
@@ -737,27 +737,16 @@ int adreno_postmortem_dump(struct kgsl_device *device, int manual)
 	KGSL_LOG_DUMP(device, "BUS CLK = %lu ",
 		kgsl_get_clkrate(pwr->ebi1_clk));
 
-	/* Disable the idle timer so we don't get interrupted */
-	del_timer_sync(&device->idle_timer);
-	mutex_unlock(&device->mutex);
-	flush_workqueue(device->work_queue);
-	mutex_lock(&device->mutex);
-
-	/* Turn off napping to make sure we have the clocks full
-	   attention through the following process */
-	saved_nap = device->pwrctrl.nap_allowed;
-	device->pwrctrl.nap_allowed = false;
+	/*
+	 * Disable the irq, idle timer, and workqueue so we don't
+	 * get interrupted
+	 */
+	kgsl_pwrctrl_stop_work(device);
 
 	/* Force on the clocks */
-	kgsl_pwrctrl_wake(device);
-
-	/* Disable the irq */
-	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_OFF);
+	kgsl_pwrctrl_clk(device, KGSL_PWRFLAGS_ON);
 
 	adreno_dump(device);
-
-	/* Restore nap mode */
-	device->pwrctrl.nap_allowed = saved_nap;
 
 	/* On a manual trigger, turn on the interrupts and put
 	   the clocks to sleep.  They will recover themselves
@@ -773,6 +762,11 @@ int adreno_postmortem_dump(struct kgsl_device *device, int manual)
 	}
 
 	KGSL_DRV_ERR(device, "Dump Finished\n");
+
+	hr_msleep(5000);
+	/* aleays bug on */
+	BUG_ON(true);
+
 
 	return 0;
 }
