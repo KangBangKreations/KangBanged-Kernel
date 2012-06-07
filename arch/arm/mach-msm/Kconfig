@@ -885,6 +885,13 @@ config PMEM_GPU0
 	help
 	  Enable the PMEM GPU0 device on SMI Memory.
 
+config SHOOTER_PMEM
+	bool "Enable Shooter Pmem Allocation"
+	default n
+	depends on ANDROID_PMEM
+	help
+	  Enable larger Shooter Pmem Allocation sizes.
+
 config MSM_AMSS_VERSION
 	int
 	default 6210 if MSM_AMSS_VERSION_6210
