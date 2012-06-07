@@ -70,7 +70,7 @@ static void check_temp(struct work_struct *work)
 	tsens_dev.sensor_num = DEF_TEMP_SENSOR;
 	ret = tsens_get_temp(&tsens_dev, &temp);
 	if (ret) {
-		pr_err("msm_thermal: Unable to read TSENS sensor %d\n",
+		pr_debug("msm_thermal: Unable to read TSENS sensor %d\n",
 				tsens_dev.sensor_num);
 		goto reschedule;
 	}
@@ -116,6 +116,10 @@ static void disable_msm_thermal(void)
 {
 	int cpu = 0;
 	struct cpufreq_policy *cpu_policy = NULL;
+
+	/* make sure check_temp is no longer running */
+	cancel_delayed_work(&check_temp_work);
+	flush_scheduled_work();
 
 	for_each_possible_cpu(cpu) {
 		cpu_policy = cpufreq_cpu_get(cpu);
