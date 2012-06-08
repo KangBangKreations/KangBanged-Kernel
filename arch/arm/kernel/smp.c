@@ -516,7 +516,7 @@ static void percpu_timer_stop(void)
 	unsigned int cpu = smp_processor_id();
 	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
 
-	local_timer_stop(evt);
+	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
 }
 #endif
 
