@@ -1145,42 +1145,10 @@ static struct platform_suspend_ops msm_pm_ops = {
 /******************************************************************************
  * Initialization routine
  *****************************************************************************/
-/*
- * For speeding up boot time:
- * During booting up, disable entering arch_idle() by disable_hlt()
- * Enable it after booting up BOOT_LOCK_TIMEOUT sec.
-*/
-
-#define BOOT_LOCK_TIMEOUT_NORMAL      (60 * HZ)
-#define BOOT_LOCK_TIMEOUT_SHORT      (10 * HZ)
-static void do_expire_boot_lock(struct work_struct *work)
+void __init msm_pm_init_sleep_status_data(
+		struct msm_pm_sleep_status_data *data)
 {
-	enable_hlt();
-	pr_info("Release 'boot-time' no_halt_lock\n");
-}
-static DECLARE_DELAYED_WORK(work_expire_boot_lock, do_expire_boot_lock);
-
-static void __init boot_lock_nohalt(void)
-{
-	int nohalt_timeout;
-
-	/* normal/factory2/recovery */
-	switch (board_mfg_mode()) {
-	case 0:  /* normal */
-	case 1:  /* factory2 */
-	case 2:  /* recovery */
-		nohalt_timeout = BOOT_LOCK_TIMEOUT_NORMAL;
-		break;
-	case 3:  /* charge */
-	case 4:  /* power_test */
-	case 5:  /* offmode_charge */
-	default:
-		nohalt_timeout = BOOT_LOCK_TIMEOUT_SHORT;
-		break;
-	}
-	disable_hlt();
-	schedule_delayed_work(&work_expire_boot_lock, nohalt_timeout);
-	pr_info("Acquire 'boot-time' no_halt_lock %ds\n", nohalt_timeout / HZ);
+	msm_pm_slp_sts = data;
 }
 
 static int __init msm_pm_init(void)
