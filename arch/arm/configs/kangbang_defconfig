@@ -436,6 +436,7 @@ CONFIG_MSM_QDSP6_APR=y
 # CONFIG_MSM_RPC_VIBRATOR is not set
 CONFIG_MSM_SPM_V1=y
 # CONFIG_MSM_SPM_V2 is not set
+# CONFIG_MSM_DCVS is not set
 
 #
 # Cable detect: 8x60 only
