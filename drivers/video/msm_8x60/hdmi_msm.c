@@ -385,7 +385,7 @@ static void hdmi_msm_hpd_state_work(struct work_struct *work)
 				envp [1] = NULL;
 				kobject_uevent_env(external_common_state->uevent_kobj,
 					KOBJ_CHANGE, envp);
-				hr_msleep(100);
+				msleep(100);
 
 				hdmi_msm_turn_on();
 				DEV_INFO("HDMI HPD: sense CONNECTED: send ONLINE\n");
@@ -400,12 +400,12 @@ static void hdmi_msm_hpd_state_work(struct work_struct *work)
 #endif
 
 				#ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL_HDCP_SUPPORT
-				hr_msleep(100);
+				msleep(100);
 				hdmi_msm_hdcp_enable();
 				#endif
 
 				#ifndef CONFIG_FB_MSM_HDMI_MSM_PANEL_HDCP_SUPPORT
-				hr_msleep(100);
+				msleep(100);
 				{
 					DEV_INFO("HDMI HPD: sense : send HDCP_PASS \n");
 					envp[0] = "HDCP_STATE=PASS";
@@ -1986,7 +1986,7 @@ static int hdcp_authentication_part1(void)
 	* HDCP compliance cases to fail
 	*/
 #ifdef HDCP_COMPLIANCE
-	hr_msleep(125);
+	msleep(125);
 #else
 	msleep(125);
 #endif
@@ -2168,7 +2168,7 @@ static int hdcp_authentication_part2(void)
 		* HDCP compliance cases to fail
 		*/
 #ifdef HDCP_COMPLIANCE
-		hr_msleep(100);
+		msleep(100);
 #else
 		msleep(100);
 #endif
@@ -2259,7 +2259,7 @@ static int hdcp_authentication_part2(void)
 			* HDCP compliance cases to fail
 			*/
 #ifdef HDCP_COMPLIANCE
-			hr_msleep(25);
+			msleep(25);
 #else
 			msleep(25);
 #endif
