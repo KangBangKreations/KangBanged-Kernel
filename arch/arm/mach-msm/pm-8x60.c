@@ -372,6 +372,8 @@ struct msm_pm_cpu_time_stats {
 	struct msm_pm_time_stats stats[MSM_PM_STAT_COUNT];
 };
 
+static struct msm_pm_sleep_status_data *msm_pm_slp_sts;
+
 static DEFINE_SPINLOCK(msm_pm_stats_lock);
 static DEFINE_PER_CPU_SHARED_ALIGNED(
 	struct msm_pm_cpu_time_stats, msm_pm_stats);
