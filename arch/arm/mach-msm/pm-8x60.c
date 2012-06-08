@@ -672,34 +672,9 @@ static bool msm_pm_spm_power_collapse(
 	vfp_flush_context();
 #endif
 
-	if (!from_idle && smp_processor_id() == 0) {
-		if (suspend_console_deferred)
-			suspend_console();
-
-		msm_rpm_set_suspend_flag(true);
-
-#ifdef CONFIG_MSM_WATCHDOG
-		msm_watchdog_suspend(NULL);
-#endif
-
-		printk(KERN_INFO "[R] suspend end\n");
-	}
-	collapsed = msm_pm_collapse();
+	collapsed = msm_pm_l2x0_power_collapse();
 
 	msm_pm_boot_config_after_pc(cpu);
-
-	if (!from_idle && smp_processor_id() == 0) {
-		printk(KERN_INFO "[R] resume start\n");
-
-#ifdef CONFIG_MSM_WATCHDOG
-		msm_watchdog_resume(NULL);
-#endif
-
-		msm_rpm_set_suspend_flag(false);
-
-		if (suspend_console_deferred)
-			resume_console();
-	}
 
 	if (collapsed) {
 #ifdef CONFIG_VFP
@@ -714,9 +689,6 @@ static bool msm_pm_spm_power_collapse(
 	if (MSM_PM_DEBUG_POWER_COLLAPSE & msm_pm_debug_mask)
 		pr_info("CPU%u: %s: msm_pm_collapse returned, collapsed %d\n",
 			cpu, __func__, collapsed);
-
-	if (MSM_PM_DEBUG_RPM_TIMESTAMP & msm_pm_debug_mask && !from_idle)
-		msm_rpm_print_sleep_tick();
 
 	ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_CLOCK_GATING, false);
 	WARN_ON(ret);
@@ -1066,7 +1038,7 @@ static int msm_pm_enter(suspend_state_t state)
 {
 	bool allow[MSM_PM_SLEEP_MODE_NR];
 	int i;
-	int curr_len = 0;
+
 #ifdef CONFIG_MSM_IDLE_STATS
 	int64_t period = 0;
 	int64_t time = msm_timer_get_sclk_time(&period);
@@ -1074,28 +1046,6 @@ static int msm_pm_enter(suspend_state_t state)
 
 	if (MSM_PM_DEBUG_SUSPEND & msm_pm_debug_mask)
 		pr_info("%s\n", __func__);
-
-	if (MSM_PM_DEBUG_GPIO & msm_pm_debug_mask) {
-		if (gpio_sleep_status_info) {
-			memset(gpio_sleep_status_info, 0,
-				sizeof(gpio_sleep_status_info));
-		} else {
-			gpio_sleep_status_info = kmalloc(25000, GFP_ATOMIC);
-			if (!gpio_sleep_status_info) {
-				pr_err("[PM] kmalloc memory failed in %s\n",
-					__func__);
-
-			}
-		}
-
-		curr_len = msm_dump_gpios(NULL, curr_len,
-						gpio_sleep_status_info);
-		curr_len = pm8xxx_dump_gpios(NULL, curr_len,
-						gpio_sleep_status_info);
-		curr_len = pm8xxx_dump_mpp(NULL, curr_len,
-						gpio_sleep_status_info);
-
-	}
 
 	if (smp_processor_id()) {
 		__WARN();
@@ -1117,7 +1067,7 @@ static int msm_pm_enter(suspend_state_t state)
 		if (MSM_PM_DEBUG_SUSPEND & msm_pm_debug_mask)
 			pr_info("%s: power collapse\n", __func__);
 
-/*		clock_debug_print_enabled();	*/
+		clock_debug_print_enabled();
 
 #ifdef CONFIG_MSM_SLEEP_TIME_OVERRIDE
 		if (msm_pm_sleep_time_override > 0) {
@@ -1175,27 +1125,7 @@ static int msm_pm_enter(suspend_state_t state)
 	} else if (allow[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT]) {
 		if (MSM_PM_DEBUG_SUSPEND & msm_pm_debug_mask)
 			pr_info("%s: swfi\n", __func__);
-
-		if (suspend_console_deferred)
-			suspend_console();
-
-#ifdef CONFIG_MSM_WATCHDOG
-		msm_watchdog_suspend(NULL);
-#endif
-
-		printk(KERN_INFO "[R] suspend end\n");
 		msm_pm_swfi();
-		printk(KERN_INFO "[R] resume start\n");
-
-#ifdef CONFIG_MSM_WATCHDOG
-		msm_watchdog_resume(NULL);
-#endif
-
-		if (suspend_console_deferred)
-			resume_console();
-
-		if (MSM_PM_DEBUG_RPM_TIMESTAMP & msm_pm_debug_mask)
-			msm_rpm_print_sleep_tick();
 	}
 
 
@@ -1205,11 +1135,6 @@ enter_exit:
 
 	return 0;
 }
-
-static struct platform_suspend_ops msm_pm_ops = {
-	.enter = msm_pm_enter,
-	.valid = suspend_valid_only_mem,
-};
 
 
 /******************************************************************************
@@ -1344,14 +1269,7 @@ static int __init msm_pm_init(void)
 	msm_spm_allow_x_cpu_set_vdd(false);
 
 	suspend_set_ops(&msm_pm_ops);
-	boot_lock_nohalt();
 	msm_cpuidle_init();
-
-	if (get_kernel_flag() & KERNEL_FLAG_GPIO_DUMP) {
-		suspend_console_deferred = 1;
-		console_suspend_enabled = 0;
-		msm_pm_debug_mask |= MSM_PM_DEBUG_GPIO;
-	}
 
 	return 0;
 }
