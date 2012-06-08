@@ -23,8 +23,11 @@ struct msm_watchdog_pdata {
 
 #ifdef CONFIG_MSM_WATCHDOG
 void pet_watchdog(void);
+int msm_watchdog_suspend(struct device *dev);
+int msm_watchdog_resume(struct device *dev);
 #else
 static inline void pet_watchdog(void) { }
 #endif
+void set_WDT_EN_footprint(unsigned char);
 
 #endif
