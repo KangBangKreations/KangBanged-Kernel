@@ -220,7 +220,7 @@ static int aic3254_config(CODEC_SPI_CMD *cmds, int size)
 							__func__, ret);
 					else if (data == cmds[i].data)
 						break;
-					hr_msleep(1);
+					msleep(1);
 				}
 				if (retry <= 0)
 					pr_aud_info("3254 power down procedure"
@@ -229,7 +229,7 @@ static int aic3254_config(CODEC_SPI_CMD *cmds, int size)
 						ret, cmds[i].data);
 				break;
 			case 'd':
-				hr_msleep(cmds[i].data);
+				msleep(cmds[i].data);
 				break;
 			default:
 				break;
