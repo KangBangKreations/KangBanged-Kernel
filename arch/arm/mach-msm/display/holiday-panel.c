@@ -911,7 +911,7 @@ static void holiday_panel_power(int on)
 					" l19_2v85\n", __func__);
 			return;
 		}
-		hr_msleep(5);
+		msleep(5);
 
 		if (regulator_enable(l20_1v8)) {
 			PR_DISP_ERR("%s: Unable to enable the regulator:"
@@ -923,23 +923,23 @@ static void holiday_panel_power(int on)
 			init = 2;
 			return;
 		} else {
-			hr_msleep(10);
+			msleep(10);
 			gpio_set_value(HOLIDAY_GPIO_LCM_RST_N, 1);
-			hr_msleep(1);
+			msleep(1);
 			gpio_set_value(HOLIDAY_GPIO_LCM_RST_N, 0);
-			hr_msleep(1);
+			msleep(1);
 			gpio_set_value(HOLIDAY_GPIO_LCM_RST_N, 1);
-			hr_msleep(20);
+			msleep(20);
 		}
 	} else {
 		gpio_set_value(HOLIDAY_GPIO_LCM_RST_N, 0);
-		hr_msleep(5);
+		msleep(5);
 		if (regulator_disable(l20_1v8)) {
 			PR_DISP_ERR("%s: Unable to enable the regulator:"
 				" l20_1v8\n", __func__);
 			return;
 		}
-		hr_msleep(5);
+		msleep(5);
 		if (regulator_disable(l19_2v85)) {
 			PR_DISP_ERR("%s: Unable to enable the regulator:"
 					" l19_2v85\n", __func__);
@@ -1105,7 +1105,7 @@ static int holiday_esd_fixup(uint32_t data)
 		pwrVal = mipi_orise_read_power();
 		if (0x9C != pwrVal) {
 			PR_DISP_INFO("%s: power status of driver IC = 0x%02X\n", __func__, pwrVal);
-			hr_msleep(1);
+			msleep(1);
 			pwrVal = mipi_orise_read_power();
 			if (0x9C != pwrVal) {
 				PR_DISP_INFO("%s: power status of driver IC = 0x%02X\n", __func__, pwrVal);
