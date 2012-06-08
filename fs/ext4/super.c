@@ -43,9 +43,6 @@
 
 #include <linux/kthread.h>
 #include <linux/freezer.h>
-#ifdef CONFIG_EXT4_E2FSCK_RECOVER
-#include <linux/reboot.h>
-#endif
 
 #include "ext4.h"
 #include "ext4_jbd2.h"
@@ -422,11 +419,6 @@ static void ext4_handle_error(struct super_block *sb)
 	if (test_opt(sb, ERRORS_PANIC))
 		panic("EXT4-fs (device %s): panic forced after error\n",
 			sb->s_id);
-
-#ifdef CONFIG_EXT4_E2FSCK_RECOVER
-	if (test_opt(sb, ERRORS_RO))
-		ext4_e2fsck(sb);
-#endif
 }
 
 void __ext4_error(struct super_block *sb, const char *function,
@@ -444,42 +436,6 @@ void __ext4_error(struct super_block *sb, const char *function,
 
 	ext4_handle_error(sb);
 }
-
-#ifdef CONFIG_EXT4_E2FSCK_RECOVER
-static void ext4_reboot(struct work_struct *work)
-{
-	printk(KERN_ERR "%s: reboot to run e2fsck\n", __func__);
-	kernel_restart("oem-22");
-}
-
-void ext4_e2fsck(struct super_block *sb)
-{
-	static int reboot;
-	struct workqueue_struct *wq;
-	struct ext4_sb_info *sb_info;
-	if (reboot)
-		return;
-	printk(KERN_ERR "%s\n", __func__);
-	reboot = 1;
-	sb_info = EXT4_SB(sb);
-	if (!sb_info) {
-		printk(KERN_ERR "%s: no sb_info\n", __func__);
-		reboot = 0;
-		return;
-	}
-	sb_info->recover_wq = create_workqueue("ext4-recover");
-	if (!sb_info->recover_wq) {
-		printk(KERN_ERR "EXT4-fs: failed to create recover workqueue\n");
-		reboot = 0;
-		return;
-	}
-
-	INIT_WORK(&sb_info->reboot_work, ext4_reboot);
-	wq = sb_info->recover_wq;
-	/* queue the work to reboot */
-	queue_work(wq, &sb_info->reboot_work);
-}
-#endif
 
 void ext4_error_inode(struct inode *inode, const char *function,
 		      unsigned int line, ext4_fsblk_t block,
@@ -1157,9 +1113,9 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
 		seq_puts(seq, ",block_validity");
 
 	if (!test_opt(sb, INIT_INODE_TABLE))
-		seq_puts(seq, ",noinit_itable");
+		seq_puts(seq, ",noinit_inode_table");
 	else if (sbi->s_li_wait_mult != EXT4_DEF_LI_WAIT_MULT)
-		seq_printf(seq, ",init_itable=%u",
+		seq_printf(seq, ",init_inode_table=%u",
 			   (unsigned) sbi->s_li_wait_mult);
 
 	ext4_show_quota_options(seq, sb);
@@ -1335,7 +1291,8 @@ enum {
 	Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
 	Opt_inode_readahead_blks, Opt_journal_ioprio,
 	Opt_dioread_nolock, Opt_dioread_lock,
-	Opt_discard, Opt_nodiscard, Opt_init_itable, Opt_noinit_itable,
+	Opt_discard, Opt_nodiscard,
+	Opt_init_inode_table, Opt_noinit_inode_table,
 };
 
 static const match_table_t tokens = {
@@ -1408,9 +1365,9 @@ static const match_table_t tokens = {
 	{Opt_dioread_lock, "dioread_lock"},
 	{Opt_discard, "discard"},
 	{Opt_nodiscard, "nodiscard"},
-	{Opt_init_itable, "init_itable=%u"},
-	{Opt_init_itable, "init_itable"},
-	{Opt_noinit_itable, "noinit_itable"},
+	{Opt_init_inode_table, "init_itable=%u"},
+	{Opt_init_inode_table, "init_itable"},
+	{Opt_noinit_inode_table, "noinit_itable"},
 	{Opt_err, NULL},
 };
 
@@ -1887,7 +1844,7 @@ set_qf_format:
 		case Opt_dioread_lock:
 			clear_opt(sb, DIOREAD_NOLOCK);
 			break;
-		case Opt_init_itable:
+		case Opt_init_inode_table:
 			set_opt(sb, INIT_INODE_TABLE);
 			if (args[0].from) {
 				if (match_int(&args[0], &option))
@@ -1898,7 +1855,7 @@ set_qf_format:
 				return 0;
 			sbi->s_li_wait_mult = option;
 			break;
-		case Opt_noinit_itable:
+		case Opt_noinit_inode_table:
 			clear_opt(sb, INIT_INODE_TABLE);
 			break;
 		default:
@@ -2001,16 +1958,17 @@ static int ext4_fill_flex_info(struct super_block *sb)
 	struct ext4_group_desc *gdp = NULL;
 	ext4_group_t flex_group_count;
 	ext4_group_t flex_group;
-	unsigned int groups_per_flex = 0;
+	int groups_per_flex = 0;
 	size_t size;
 	int i;
 
 	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
-	if (sbi->s_log_groups_per_flex < 1 || sbi->s_log_groups_per_flex > 31) {
+	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
+
+	if (groups_per_flex < 2) {
 		sbi->s_log_groups_per_flex = 0;
 		return 1;
 	}
-	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
 
 	/* We allocate both existing and potentially added groups */
 	flex_group_count = ((sbi->s_groups_count + groups_per_flex - 1) +
@@ -3356,7 +3314,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 	sbi->s_inodes_per_block = blocksize / EXT4_INODE_SIZE(sb);
 	if (sbi->s_inodes_per_block == 0)
 		goto cantfind_ext4;
-	sbi->s_itb_per_group = (sbi->s_inodes_per_group + sbi->s_inodes_per_block - 1)/
+	sbi->s_itb_per_group = sbi->s_inodes_per_group /
 					sbi->s_inodes_per_block;
 	sbi->s_desc_per_block = blocksize / EXT4_DESC_SIZE(sb);
 	sbi->s_sbh = bh;

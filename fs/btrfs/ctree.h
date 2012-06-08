@@ -1381,6 +1381,8 @@ struct btrfs_ioctl_defrag_range_args {
 
 #define BTRFS_INODE_ROOT_ITEM_INIT	(1 << 31)
 
+#define BTRFS_INODE_ROOT_ITEM_INIT	(1 << 31)
+
 /* some macros to generate set/get funcs for the struct fields.  This
  * assumes there is a lefoo_to_cpu for every type, so lets make a simple
  * one for u8:
@@ -1972,7 +1974,7 @@ BTRFS_SETGET_STACK_FUNCS(root_last_snapshot, struct btrfs_root_item,
 
 static inline bool btrfs_root_readonly(struct btrfs_root *root)
 {
-	return (root->root_item.flags & cpu_to_le64(BTRFS_ROOT_SUBVOL_RDONLY)) != 0;
+	return root->root_item.flags & BTRFS_ROOT_SUBVOL_RDONLY;
 }
 
 /* struct btrfs_super_block */

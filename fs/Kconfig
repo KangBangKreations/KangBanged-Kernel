@@ -4,11 +4,6 @@
 
 menu "File systems"
 
-config VFS_CACHE_PRESSURE
-	int "vfs Cache Pressure"
-	default 100
-	help
-
 if BLOCK
 
 source "fs/ext2/Kconfig"
