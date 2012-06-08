@@ -90,31 +90,49 @@ static void *scm_regsave;
 
 static struct msm_watchdog_pdata __percpu **percpu_pdata;
 
+void set_WDT_EN_footprint(unsigned char WDT_ENABLE)
 static void pet_watchdog_work(struct work_struct *work);
 static void init_watchdog_work(struct work_struct *work);
 static DECLARE_DELAYED_WORK(dogwork_struct, pet_watchdog_work);
 static DECLARE_WORK(init_dogwork_struct, init_watchdog_work);
 
-static int msm_watchdog_suspend(struct device *dev)
+/* Remove static to allow call from suspend/resume function */
+int msm_watchdog_suspend(struct device *dev)
 {
-	if (!enable)
+	if (!enable || !msm_tmr0_base)
 		return 0;
 
 	__raw_writel(1, msm_tmr0_base + WDT0_RST);
 	__raw_writel(0, msm_tmr0_base + WDT0_EN);
 	mb();
+	set_WDT_EN_footprint(0);
+	printk(KERN_DEBUG "msm_watchdog_suspend\n");
 	return 0;
 }
+EXPORT_SYMBOL(msm_watchdog_suspend);
 
-static int msm_watchdog_resume(struct device *dev)
+/* Remove static to allow call from suspend/resume function */
+int msm_watchdog_resume(struct device *dev)
 {
-	if (!enable)
+	if (!enable || !msm_tmr0_base)
 		return 0;
 
 	__raw_writel(1, msm_tmr0_base + WDT0_EN);
 	__raw_writel(1, msm_tmr0_base + WDT0_RST);
+	set_WDT_EN_footprint(1);
+	last_pet = sched_clock();
+	printk(KERN_DEBUG "msm_watchdog_resume\n");
 	mb();
 	return 0;
+}
+EXPORT_SYMBOL(msm_watchdog_resume);
+
+static void msm_watchdog_stop(void)
+{
+	__raw_writel(1, msm_tmr0_base + WDT0_RST);
+	__raw_writel(0, msm_tmr0_base + WDT0_EN);
+	set_WDT_EN_footprint(0);
+	printk(KERN_INFO "msm_watchdog_stop");
 }
 
 static int panic_wdog_handler(struct notifier_block *this,
@@ -123,6 +141,7 @@ static int panic_wdog_handler(struct notifier_block *this,
 	if (panic_timeout == 0) {
 		__raw_writel(0, msm_tmr0_base + WDT0_EN);
 		mb();
+		set_WDT_EN_footprint(0);
 	} else {
 		__raw_writel(WDT_HZ * (panic_timeout + 4),
 				msm_tmr0_base + WDT0_BARK_TIME);
