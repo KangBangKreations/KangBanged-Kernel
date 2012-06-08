@@ -213,21 +213,17 @@ struct mmc_host {
 #define MMC_CAP_MAX_CURRENT_800	(1 << 29)	/* Host max current limit is 800mA */
 #define MMC_CAP_CMD23		(1 << 30)	/* CMD23 supported. */
 
-	unsigned int		caps2;		/* More host capabilities */
-
-#define MMC_CAP2_BOOTPART_NOACC	(1 << 0)	/* Boot partition no access */
-
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
+#ifdef CONFIG_MMC_CLKGATE
 	int			clk_requests;	/* internal reference counter */
 	unsigned int		clk_delay;	/* number of MCI clk hold cycles */
 	bool			clk_gated;	/* clock gated */
-	struct delayed_work	clk_gate_work; /* delayed clock gate */
+	struct work_struct	clk_gate_work; /* delayed clock gate */
 	unsigned int		clk_old;	/* old clock value cache */
 	spinlock_t		clk_lock;	/* lock for clk fields */
-	struct mutex		clk_gate_mutex;	/* mutex for clock gating */
-	struct device_attribute clkgate_delay_attr;
-	unsigned long		clkgate_delay;
+	struct mutex clk_gate_mutex; /* mutex for clock gating */
+#endif
 
 	/* host specific block data */
 	unsigned int		max_seg_size;	/* see blk_queue_max_segment_size */
@@ -267,7 +263,6 @@ struct mmc_host {
 	int			claim_cnt;	/* "claim" nesting count */
 
 	struct delayed_work	detect;
-	/* HTC extension */
 	struct delayed_work	remove;
 	struct wake_lock	detect_wake_lock;
 	int                     detect_change;  /* card detect flag */
@@ -282,6 +277,7 @@ struct mmc_host {
 
 	unsigned int		sdio_irqs;
 	struct task_struct	*sdio_irq_thread;
+
 	atomic_t		sdio_irq_thread_abort;
 
 	mmc_pm_flag_t		pm_flags;	/* requested pm features */
@@ -318,7 +314,6 @@ struct mmc_host {
 		ktime_t wtime_drv;	   /* Wr time  MMC Host  */
 		ktime_t start;
 	} perf;
-	bool perf_enable;
 #endif
 	unsigned long		private[0] ____cacheline_aligned;
 };
@@ -348,7 +343,7 @@ static inline void *mmc_priv(struct mmc_host *host)
 #define mmc_hostname(x)	(dev_name(&(x)->class_dev))
 #define mmc_bus_needs_resume(host) ((host)->bus_resume_flags & MMC_BUSRESUME_NEEDS_RESUME)
 #define mmc_bus_manual_resume(host) ((host)->bus_resume_flags & MMC_BUSRESUME_MANUAL_RESUME)
-#define mmc_bus_fails_resume(host) \
+#define mmc_bus_fails_resume(host)  \
 	((host)->bus_resume_flags & MMC_BUSRESUME_FAILS_RESUME)
 
 static inline void mmc_set_bus_resume_policy(struct mmc_host *host, int manual)
@@ -443,11 +438,6 @@ static inline int mmc_card_wake_sdio_irq(struct mmc_host *host)
 static inline int mmc_host_cmd23(struct mmc_host *host)
 {
 	return host->caps & MMC_CAP_CMD23;
-}
-
-static inline int mmc_boot_partition_access(struct mmc_host *host)
-{
-	return !(host->caps2 & MMC_CAP2_BOOTPART_NOACC);
 }
 
 #ifdef CONFIG_MMC_CLKGATE
