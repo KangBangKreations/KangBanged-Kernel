@@ -1947,14 +1947,10 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
 {
 	if (md) {
 		if (md->disk->flags & GENHD_FL_UP) {
-			/* Resume queue before enter gendisk_async.
-			 * Flush thread may be blocked by I/O and can not be stopped when queue thread is still suspended.
-			 */
-			mmc_queue_resume(&md->queue);
 			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
 
 			/* Stop new requests from getting into the queue */
-			gendisk_async(md->disk);
+			del_gendisk(md->disk);
 		}
 
 		/* Then flush out any already in there */
