@@ -1136,6 +1136,11 @@ enter_exit:
 	return 0;
 }
 
+static struct platform_suspend_ops msm_pm_ops = {
+	.enter = msm_pm_enter,
+	.valid = suspend_valid_only_mem,
+};
+
 
 /******************************************************************************
  * Initialization routine
