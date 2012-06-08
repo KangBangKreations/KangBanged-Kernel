@@ -672,7 +672,7 @@ static bool msm_pm_spm_power_collapse(
 	vfp_flush_context();
 #endif
 
-	collapsed = msm_pm_l2x0_power_collapse();
+	collapsed = msm_pm_collapse();
 
 	msm_pm_boot_config_after_pc(cpu);
 
