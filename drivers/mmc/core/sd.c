@@ -1089,11 +1089,18 @@ static void mmc_sd_detect(struct mmc_host *host)
 	mmc_release_host(host);
 
 	if (err) {
+	/*
+	 * let card removal task run in worker thread to avoid sd-qd being blocked.
+	 */
+		remove_card(host);
+#if 0
 		mmc_sd_remove(host);
 
 		mmc_claim_host(host);
 		mmc_detach_bus(host);
+		mmc_power_off(host);
 		mmc_release_host(host);
+#endif
 	}
 }
 
@@ -1125,6 +1132,7 @@ static int mmc_sd_resume(struct mmc_host *host)
 	int err;
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
 	int retries;
+	int delayTime;
 #endif
 
 	BUG_ON(!host);
@@ -1133,17 +1141,18 @@ static int mmc_sd_resume(struct mmc_host *host)
 	mmc_claim_host(host);
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
 	retries = 5;
+	delayTime = 5;
 	while (retries) {
 		err = mmc_sd_init_card(host, host->ocr, host->card);
 
 		if (err) {
-			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
-			       mmc_hostname(host), err, retries);
-			retries--;
+			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d, delay time = %d ms)\n",
+			       mmc_hostname(host), err, retries, delayTime);
 			mmc_power_off(host);
-			usleep_range(5000, 5500);
+			mdelay(delayTime);
 			mmc_power_up(host);
-			mmc_select_voltage(host, host->ocr);
+			retries--;
+			delayTime *= 2;
 			continue;
 		}
 		break;
@@ -1280,10 +1289,6 @@ int mmc_attach_sd(struct mmc_host *host)
 		err = mmc_sd_init_card(host, host->ocr, NULL);
 		if (err) {
 			retries--;
-			mmc_power_off(host);
-			usleep_range(5000, 5500);
-			mmc_power_up(host);
-			mmc_select_voltage(host, host->ocr);
 			continue;
 		}
 		break;
