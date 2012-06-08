@@ -21,18 +21,13 @@
 #include <linux/mfd/pmic8058.h>
 #include <linux/jiffies.h>
 #include <linux/suspend.h>
+#include <linux/percpu.h>
 #include <linux/interrupt.h>
-#include <linux/kernel_stat.h>
-#include <linux/sched.h>
 #include <mach/msm_iomap.h>
 #include <asm/mach-types.h>
-#include <mach/restart.h>
-#include <mach/scm-io.h>
 #include <mach/scm.h>
 #include <mach/socinfo.h>
-#include <mach/msm_watchdog.h>
-#include <mach/board_htc.h>
-#include "htc_watchdog_monitor.h"
+#include "msm_watchdog.h"
 #include "timer.h"
 
 #define MODULE_NAME "msm_watchdog"
@@ -41,21 +36,17 @@
 
 #define WDT0_RST	0x38
 #define WDT0_EN		0x40
+#define WDT0_STS	0x44
 #define WDT0_BARK_TIME	0x4C
 #define WDT0_BITE_TIME	0x5C
 
 #define WDT_HZ		32768
 
-/* Periodically dump top 5 cpu usages. */
-#define HTC_WATCHDOG_TOP_SCHED_DUMP 0
-
-static void __iomem *msm_tmr0_base = 0;
+static void __iomem *msm_tmr0_base;
 
 static unsigned long delay_time;
 static unsigned long bark_time;
 static unsigned long long last_pet;
-
-static atomic_t watchdog_bark_counter = ATOMIC_INIT(0);
 
 /*
  * On the kernel command line specify
@@ -79,7 +70,11 @@ static int wdog_enable_set(const char *val, struct kernel_param *kp);
 module_param_call(runtime_disable, wdog_enable_set, param_get_int,
 			&runtime_disable, 0644);
 
-static int appsbark = 1;
+/*
+ * On the kernel command line specify msm_watchdog.appsbark=1 to handle
+ * watchdog barks in Linux. By default barks are processed by the secure side.
+ */
+static int appsbark;
 module_param(appsbark, int, 0);
 
 /*
@@ -90,94 +85,36 @@ module_param(appsbark, int, 0);
 static int print_all_stacks = 1;
 module_param(print_all_stacks, int,  S_IRUGO | S_IWUSR);
 
+/* Area for context dump in secure mode */
+static void *scm_regsave;
+
+static struct msm_watchdog_pdata __percpu **percpu_pdata;
+
 static void pet_watchdog_work(struct work_struct *work);
 static void init_watchdog_work(struct work_struct *work);
 static DECLARE_DELAYED_WORK(dogwork_struct, pet_watchdog_work);
 static DECLARE_WORK(init_dogwork_struct, init_watchdog_work);
 
-static unsigned int last_irqs[NR_IRQS];
-void wtd_dump_irqs(unsigned int dump)
+static int msm_watchdog_suspend(struct device *dev)
 {
-	int n;
-	if (dump) {
-		pr_err("\nWatchdog dump irqs:\n");
-		pr_err("irqnr       total  since-last   status  name\n");
-	}
-	for (n = 1; n < NR_IRQS; n++) {
-		struct irqaction *act = irq_desc[n].action;
-		if (!act && !kstat_irqs(n))
-			continue;
-		if (dump) {
-			pr_err("%5d: %10u %11u  %s\n", n,
-				kstat_irqs(n),
-				kstat_irqs(n) - last_irqs[n],
-				(act && act->name) ? act->name : "???");
-		}
-		last_irqs[n] = kstat_irqs(n);
-	}
-}
-EXPORT_SYMBOL(wtd_dump_irqs);
-
-void set_WDT_EN_footprint(unsigned char WDT_ENABLE)
-{
-}
-
-static int kernel_flag_boot_config(char *str)
-{
-	unsigned long kernelflag;
-
-	if (!str)
-		return -EINVAL;
-
-	if (strict_strtoul(str, 16, &kernelflag))
-		return -EINVAL;
-
-	if (kernelflag & KERNEL_FLAG_WDOG_DISABLE)
-		enable = 0;
-	else if (kernelflag & KERNEL_FLAG_WDOG_FIQ)
-		appsbark = 0;
-
-	return 0;
-}
-early_param("kernelflag", kernel_flag_boot_config);
-
-/* Remove static to allow call from suspend/resume function */
-int msm_watchdog_suspend(struct device *dev)
-{
-	if (!enable || !msm_tmr0_base)
+	if (!enable)
 		return 0;
 
 	__raw_writel(1, msm_tmr0_base + WDT0_RST);
 	__raw_writel(0, msm_tmr0_base + WDT0_EN);
 	mb();
-	set_WDT_EN_footprint(0);
-	printk(KERN_DEBUG "msm_watchdog_suspend\n");
 	return 0;
 }
-EXPORT_SYMBOL(msm_watchdog_suspend);
 
-/* Remove static to allow call from suspend/resume function */
-int msm_watchdog_resume(struct device *dev)
+static int msm_watchdog_resume(struct device *dev)
 {
-	if (!enable || !msm_tmr0_base)
+	if (!enable)
 		return 0;
 
 	__raw_writel(1, msm_tmr0_base + WDT0_EN);
 	__raw_writel(1, msm_tmr0_base + WDT0_RST);
-	set_WDT_EN_footprint(1);
-	last_pet = sched_clock();
-	printk(KERN_DEBUG "msm_watchdog_resume\n");
 	mb();
 	return 0;
-}
-EXPORT_SYMBOL(msm_watchdog_resume);
-
-static void msm_watchdog_stop(void)
-{
-	__raw_writel(1, msm_tmr0_base + WDT0_RST);
-	__raw_writel(0, msm_tmr0_base + WDT0_EN);
-	set_WDT_EN_footprint(0);
-	printk(KERN_INFO "msm_watchdog_stop");
 }
 
 static int panic_wdog_handler(struct notifier_block *this,
@@ -186,7 +123,6 @@ static int panic_wdog_handler(struct notifier_block *this,
 	if (panic_timeout == 0) {
 		__raw_writel(0, msm_tmr0_base + WDT0_EN);
 		mb();
-		set_WDT_EN_footprint(0);
 	} else {
 		__raw_writel(WDT_HZ * (panic_timeout + 4),
 				msm_tmr0_base + WDT0_BARK_TIME);
@@ -225,7 +161,9 @@ static int wdog_enable_set(const char *val, struct kernel_param *kp)
 		if (!old_val) {
 			__raw_writel(0, msm_tmr0_base + WDT0_EN);
 			mb();
-			free_irq(WDT0_ACCSCSSNBARK_INT, 0);
+			disable_percpu_irq(WDT0_ACCSCSSNBARK_INT);
+			free_percpu_irq(WDT0_ACCSCSSNBARK_INT, percpu_pdata);
+			free_percpu(percpu_pdata);
 			enable = 0;
 			atomic_notifier_chain_unregister(&panic_notifier_list,
 			       &panic_blk);
@@ -248,15 +186,26 @@ done:
 	return ret;
 }
 
+unsigned min_slack_ticks = UINT_MAX;
+unsigned long long min_slack_ns = ULLONG_MAX;
+
 void pet_watchdog(void)
 {
-	__raw_writel(1, msm_tmr0_base + WDT0_RST);
-	last_pet = sched_clock();
+	int slack;
+	unsigned long long time_ns;
+	unsigned long long slack_ns;
+	unsigned long long bark_time_ns = bark_time * 1000000ULL;
 
-#if HTC_WATCHDOG_TOP_SCHED_DUMP
-	htc_watchdog_top_stat();
-#endif
-	htc_watchdog_pet_cpu_record();
+	slack = __raw_readl(msm_tmr0_base + WDT0_STS) >> 3;
+	slack = ((bark_time*WDT_HZ)/1000) - slack;
+	if (slack < min_slack_ticks)
+		min_slack_ticks = slack;
+	__raw_writel(1, msm_tmr0_base + WDT0_RST);
+	time_ns = sched_clock();
+	slack_ns = (last_pet + bark_time_ns) - time_ns;
+	if (slack_ns < min_slack_ns)
+		min_slack_ns = slack_ns;
+	last_pet = time_ns;
 }
 
 static void pet_watchdog_work(struct work_struct *work)
@@ -265,8 +214,6 @@ static void pet_watchdog_work(struct work_struct *work)
 
 	if (enable)
 		schedule_delayed_work_on(0, &dogwork_struct, delay_time);
-
-	wtd_dump_irqs(0);
 }
 
 static int msm_watchdog_remove(struct platform_device *pdev)
@@ -274,8 +221,9 @@ static int msm_watchdog_remove(struct platform_device *pdev)
 	if (enable) {
 		__raw_writel(0, msm_tmr0_base + WDT0_EN);
 		mb();
-		set_WDT_EN_footprint(0);
-		free_irq(WDT0_ACCSCSSNBARK_INT, 0);
+		disable_percpu_irq(WDT0_ACCSCSSNBARK_INT);
+		free_percpu_irq(WDT0_ACCSCSSNBARK_INT, percpu_pdata);
+		free_percpu(percpu_pdata);
 		enable = 0;
 		/* In case we got suspended mid-exit */
 		__raw_writel(0, msm_tmr0_base + WDT0_EN);
@@ -290,10 +238,6 @@ static irqreturn_t wdog_bark_handler(int irq, void *dev_id)
 	unsigned long long t = sched_clock();
 	struct task_struct *tsk;
 
-	/* this should only enter once*/
-	if (atomic_add_return(1, &watchdog_bark_counter) != 1)
-		return IRQ_HANDLED;
-
 	nanosec_rem = do_div(t, 1000000000);
 	printk(KERN_INFO "Watchdog bark! Now = %lu.%06lu\n", (unsigned long) t,
 		nanosec_rem / 1000);
@@ -307,17 +251,6 @@ static irqreturn_t wdog_bark_handler(int irq, void *dev_id)
 		/* Suspend wdog until all stacks are printed */
 		msm_watchdog_suspend(NULL);
 
-		/* Dump top cpu loading processes */
-		htc_watchdog_top_stat();
-
-		/* Dump PC, LR, and registers. */
-		print_modules();
-		__show_regs(get_irq_regs());
-
-		wtd_dump_irqs(1);
-
-		dump_stack();
-
 		printk(KERN_INFO "Stack trace dump:\n");
 
 		for_each_process(tsk) {
@@ -326,15 +259,10 @@ static irqreturn_t wdog_bark_handler(int irq, void *dev_id)
 			show_stack(tsk, NULL);
 		}
 
-		/* HTC changes: show blocked processes to debug hang problems */
-		printk(KERN_INFO "\n### Show Blocked State ###\n");
-		show_state_filter(TASK_UNINTERRUPTIBLE);
-		print_workqueue();
-
 		msm_watchdog_resume(NULL);
 	}
 
-	arm_pm_restart(RESTART_MODE_APP_WATCHDOG_BARK, "Apps-watchdog-bark-received!");
+	panic("Apps watchdog bark received!");
 	return IRQ_HANDLED;
 }
 
@@ -349,25 +277,36 @@ static void configure_bark_dump(void)
 	} cmd_buf;
 
 	if (!appsbark) {
-		cmd_buf.addr = MSM_TZ_DOG_BARK_REG_SAVE_PHYS;
-		cmd_buf.len  = MSM_TZ_DOG_BARK_REG_SAVE_SIZE;
+		scm_regsave = (void *)__get_free_page(GFP_KERNEL);
 
-		ret = scm_call(SCM_SVC_UTIL, SCM_SET_REGSAVE_CMD,
-			       &cmd_buf, sizeof(cmd_buf), NULL, 0);
-		if (ret)
-			pr_err("Setting register save address failed.\n"
-			       "Registers won't be dumped on a dog "
-			       "bite\n");
-		else
-			pr_info("%s: regsave address = 0x%X\n",
-					__func__, cmd_buf.addr);
-	} else
-		pr_info("%s: dogbark processed by apps side\n", __func__);
+		if (scm_regsave) {
+			cmd_buf.addr = __pa(scm_regsave);
+			cmd_buf.len  = PAGE_SIZE;
+
+			ret = scm_call(SCM_SVC_UTIL, SCM_SET_REGSAVE_CMD,
+				       &cmd_buf, sizeof(cmd_buf), NULL, 0);
+			if (ret)
+				pr_err("Setting register save address failed.\n"
+				       "Registers won't be dumped on a dog "
+				       "bite\n");
+		} else {
+			pr_err("Allocating register save space failed\n"
+			       "Registers won't be dumped on a dog bite\n");
+			/*
+			 * No need to bail if allocation fails. Simply don't
+			 * send the command, and the secure side will reset
+			 * without saving registers.
+			 */
+		}
+	}
 }
 
 static void init_watchdog_work(struct work_struct *work)
 {
 	u64 timeout = (bark_time * WDT_HZ)/1000;
+
+	configure_bark_dump();
+
 	__raw_writel(timeout, msm_tmr0_base + WDT0_BARK_TIME);
 	__raw_writel(timeout + 3*WDT_HZ, msm_tmr0_base + WDT0_BITE_TIME);
 
@@ -380,8 +319,6 @@ static void init_watchdog_work(struct work_struct *work)
 	__raw_writel(1, msm_tmr0_base + WDT0_RST);
 	last_pet = sched_clock();
 
-	htc_watchdog_monitor_init();
-
 	printk(KERN_INFO "MSM Watchdog Initialized\n");
 
 	return;
@@ -392,11 +329,7 @@ static int msm_watchdog_probe(struct platform_device *pdev)
 	struct msm_watchdog_pdata *pdata = pdev->dev.platform_data;
 	int ret;
 
-	msm_tmr0_base = msm_timer_get_timer0_base();
-
 	if (!enable || !pdata || !pdata->pet_time || !pdata->bark_time) {
-		/*Turn off watchdog enabled by hboot*/
-		msm_watchdog_stop();
 		printk(KERN_INFO "MSM Watchdog Not Initialized\n");
 		return -ENODEV;
 	}
@@ -406,19 +339,42 @@ static int msm_watchdog_probe(struct platform_device *pdev)
 
 	bark_time = pdata->bark_time;
 
-	/* Must request irq before sending scm command */
-	ret = request_irq(WDT0_ACCSCSSNBARK_INT, wdog_bark_handler, 0,
-			  "apps_wdog_bark", NULL);
-	if (ret)
-		return -EINVAL;
+	msm_tmr0_base = msm_timer_get_timer0_base();
 
-	configure_bark_dump();
+	percpu_pdata = alloc_percpu(struct msm_watchdog_pdata *);
+	if (!percpu_pdata) {
+		pr_err("%s: memory allocation failed for percpu data\n",
+				__func__);
+		return -ENOMEM;
+	}
+
+	*__this_cpu_ptr(percpu_pdata) = pdata;
+	/* Must request irq before sending scm command */
+	ret = request_percpu_irq(WDT0_ACCSCSSNBARK_INT, wdog_bark_handler,
+			  "apps_wdog_bark", percpu_pdata);
+	if (ret) {
+		free_percpu(percpu_pdata);
+		return ret;
+	}
+
+	enable_percpu_irq(WDT0_ACCSCSSNBARK_INT, 0);
+
+	/*
+	 * This is only temporary till SBLs turn on the XPUs
+	 * This initialization will be done in SBLs on a later releases
+	 */
+	if (cpu_is_msm9615())
+		__raw_writel(0xF, MSM_TCSR_BASE + TCSR_WDT_CFG);
 
 	delay_time = msecs_to_jiffies(pdata->pet_time);
 	schedule_work_on(0, &init_dogwork_struct);
-
 	return 0;
 }
+
+static const struct dev_pm_ops msm_watchdog_dev_pm_ops = {
+	.suspend_noirq = msm_watchdog_suspend,
+	.resume_noirq = msm_watchdog_resume,
+};
 
 static struct platform_driver msm_watchdog_driver = {
 	.probe = msm_watchdog_probe,
@@ -426,6 +382,7 @@ static struct platform_driver msm_watchdog_driver = {
 	.driver = {
 		.name = MODULE_NAME,
 		.owner = THIS_MODULE,
+		.pm = &msm_watchdog_dev_pm_ops,
 	},
 };
 
