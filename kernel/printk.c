@@ -41,7 +41,7 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/rculist.h>
-
+#include <mach/msm_rtb.h>
 #include <asm/uaccess.h>
 
 /*
@@ -365,10 +365,8 @@ static int check_syslog_permissions(int type, bool from_file)
 			return 0;
 		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
 		if (capable(CAP_SYS_ADMIN)) {
-			printk_once(KERN_WARNING "%s (%d): "
-				 "Attempt to access syslog with CAP_SYS_ADMIN "
-				 "but no CAP_SYSLOG (deprecated).\n",
-				 current->comm, task_pid_nr(current));
+			WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
+				 "but no CAP_SYSLOG (deprecated).\n");
 			return 0;
 		}
 		return -EPERM;
@@ -786,6 +784,11 @@ asmlinkage int printk(const char *fmt, ...)
 {
 	va_list args;
 	int r;
+#ifdef CONFIG_MSM_RTB
+	void *caller = __builtin_return_address(0);
+
+	uncached_logk_pc(LOGK_LOGBUF, caller, (void *)log_end);
+#endif
 
 #ifdef CONFIG_KGDB_KDB
 	if (unlikely(kdb_trap_printk)) {
@@ -815,11 +818,6 @@ static volatile unsigned int printk_cpu = UINT_MAX;
  */
 static inline int can_use_console(unsigned int cpu)
 {
-#ifdef CONFIG_HOTPLUG_CPU
-	if (!cpu_active(cpu) && cpu_hotplug_inprogress())
-		return 0;
-#endif
-
 	return cpu_online(cpu) || have_callable_console();
 }
 
@@ -1161,16 +1159,6 @@ static int __init console_suspend_disable(char *str)
 __setup("no_console_suspend", console_suspend_disable);
 
 /**
- * suspend_console_deferred:
- * Parameter to decide whether to defer suspension of console. If set as 1, suspend
- * console is deferred to latter stages. Currently used in 8x60 projects only.
- */
-int suspend_console_deferred = 1;
-module_param_named(
-	suspend_console_deferred, suspend_console_deferred, int, S_IRUGO | S_IWUSR | S_IWGRP
-);
-
-/**
  * suspend_console - suspend the console subsystem
  *
  * This disables printk() while we go into suspend states
@@ -1438,7 +1426,7 @@ void console_start(struct console *console)
 }
 EXPORT_SYMBOL(console_start);
 
-static int __read_mostly keep_bootcon = 1;
+static int __read_mostly keep_bootcon;
 
 static int __init keep_bootcon_setup(char *str)
 {

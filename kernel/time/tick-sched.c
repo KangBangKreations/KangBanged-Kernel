@@ -490,9 +490,9 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
 				hrtimer_get_expires(&ts->sched_timer), 0))
 				break;
 		}
-		/* Reread time and update jiffies */
-		now = ktime_get();
+		/* Update jiffies and reread time */
 		tick_do_update_jiffies64(now);
+		now = ktime_get();
 	}
 }
 
@@ -807,8 +807,7 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
 		update_process_times(user_mode(regs));
 		profile_tick(CPU_PROFILING);
 
-
-		if ((rq_info.init == 1) && (cpu == 0)) {
+		if ((rq_info.init == 1) && (tick_do_timer_cpu == cpu)) {
 
 			/*
 			 * update run queue statistics

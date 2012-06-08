@@ -1207,7 +1207,7 @@ static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
 next_idx:
 		if (idx >= MAX_RT_PRIO)
 			continue;
-		if (next && next->prio <= idx)
+		if (next && next->prio < idx)
 			continue;
 		list_for_each_entry(rt_se, array->queue + idx, run_list) {
 			struct task_struct *p;
@@ -1389,11 +1389,6 @@ static int push_rt_task(struct rq *rq)
 	next_task = pick_next_pushable_task(rq);
 	if (!next_task)
 		return 0;
-
-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-       if (unlikely(task_running(rq, next_task)))
-               return 0;
-#endif
 
 retry:
 	if (unlikely(next_task == rq->curr)) {

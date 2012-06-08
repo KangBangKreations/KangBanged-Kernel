@@ -28,6 +28,7 @@
 
 #include <asm/atomic.h>
 #include <asm/cacheflush.h>
+#include <asm/exception.h>
 #include <asm/system.h>
 #include <asm/unistd.h>
 #include <asm/traps.h>
@@ -41,16 +42,11 @@ static const char *handler[]= { "prefetch abort", "data abort", "address excepti
 void *vectors_page;
 
 #ifdef CONFIG_DEBUG_USER
-#ifdef CONFIG_ARCH_MSM8X60_LTE
-unsigned int user_debug = 31;
-#else
 unsigned int user_debug;
-#endif
 
 static int __init user_debug_setup(char *str)
 {
 	get_option(&str, &user_debug);
-
 	return 1;
 }
 __setup("user_debug=", user_debug_setup);
@@ -270,6 +266,7 @@ void die(const char *str, struct pt_regs *regs, int err)
 {
 	struct thread_info *thread = current_thread_info();
 	int ret;
+	enum bug_trap_type bug_type = BUG_TRAP_TYPE_NONE;
 
 	oops_enter();
 
@@ -277,7 +274,9 @@ void die(const char *str, struct pt_regs *regs, int err)
 	console_verbose();
 	bust_spinlocks(1);
 	if (!user_mode(regs))
-		report_bug(regs->ARM_pc, regs);
+		bug_type = report_bug(regs->ARM_pc, regs);
+	if (bug_type != BUG_TRAP_TYPE_NONE)
+		str = "Oops - BUG";
 	ret = __die(str, err, thread, regs);
 
 	if (regs && kexec_should_crash(thread->task))

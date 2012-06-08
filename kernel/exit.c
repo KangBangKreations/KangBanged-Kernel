@@ -716,8 +716,6 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
 	struct pid_namespace *pid_ns = task_active_pid_ns(father);
 	struct task_struct *thread;
 
-	BUG_ON(!pid_ns);
-
 	thread = father;
 	while_each_thread(father, thread) {
 		if (thread->flags & PF_EXITING)
@@ -1555,15 +1553,8 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
 	}
 
 	/* dead body doesn't have much to contribute */
-	if (unlikely(p->exit_state == EXIT_DEAD)) {
-		/*
-		 * But do not ignore this task until the tracer does
-		 * wait_task_zombie()->do_notify_parent().
-		 */
-		if (likely(!ptrace) && unlikely(ptrace_reparented(p)))
-			wo->notask_error = 0;
+	if (p->exit_state == EXIT_DEAD)
 		return 0;
-	}
 
 	/* slay zombie? */
 	if (p->exit_state == EXIT_ZOMBIE) {
