@@ -1283,7 +1283,6 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
 
 	service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
 						cfqq_type(cfqq));
-	BUG_ON(service_tree == NULL);
 	if (cfq_class_idle(cfqq)) {
 		rb_key = CFQ_IDLE_DELAY;
 		parent = rb_last(&service_tree->rb);
@@ -2168,10 +2167,7 @@ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
 
 	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
 		/* select the one with lowest rb_key */
-		struct cfq_rb_root *service_tree;
-		service_tree = service_tree_for(cfqg, prio, i);
-		BUG_ON(service_tree == NULL);
-		queue = cfq_rb_first(service_tree);
+		queue = cfq_rb_first(service_tree_for(cfqg, prio, i));
 		if (queue &&
 		    (!key_valid || time_before(queue->rb_key, lowest_key))) {
 			lowest_key = queue->rb_key;
@@ -2211,7 +2207,6 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
 	 * expiration time
 	 */
 	st = service_tree_for(cfqg, cfqd->serving_prio, cfqd->serving_type);
-	BUG_ON(st == NULL);
 	count = st->count;
 
 	/*
@@ -2279,7 +2274,7 @@ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
 static void cfq_choose_cfqg(struct cfq_data *cfqd)
 {
 	struct cfq_group *cfqg = cfq_get_next_cfqg(cfqd);
-	BUG_ON(cfqg == NULL);
+
 	cfqd->serving_group = cfqg;
 
 	/* Restore the workload type data */
@@ -2924,6 +2919,7 @@ static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic)
 static void cfq_ioc_set_ioprio(struct io_context *ioc)
 {
 	call_for_each_cic(ioc, changed_ioprio);
+	ioc->ioprio_changed = 0;
 }
 
 static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
@@ -3173,7 +3169,7 @@ static int cfq_cic_link(struct cfq_data *cfqd, struct io_context *ioc,
 		}
 	}
 
-	if (ret && ret != -EEXIST)
+	if (ret)
 		printk(KERN_ERR "cfq: cic link failed!\n");
 
 	return ret;
@@ -3189,7 +3185,6 @@ cfq_get_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
 {
 	struct io_context *ioc = NULL;
 	struct cfq_io_context *cic;
-	int ret;
 
 	might_sleep_if(gfp_mask & __GFP_WAIT);
 
@@ -3197,7 +3192,6 @@ cfq_get_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
 	if (!ioc)
 		return NULL;
 
-retry:
 	cic = cfq_cic_lookup(cfqd, ioc);
 	if (cic)
 		goto out;
@@ -3206,22 +3200,12 @@ retry:
 	if (cic == NULL)
 		goto err;
 
-	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
-	if (ret == -EEXIST) {
-		/* someone has linked cic to ioc already */
-		cfq_cic_free(cic);
-		goto retry;
-	} else if (ret)
+	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
 		goto err_free;
 
 out:
-	/*
-	 * test_and_clear_bit() implies a memory barrier, paired with
-	 * the wmb() in fs/ioprio.c, so the value seen for ioprio is the
-	 * new one.
-	 */
-	if (unlikely(test_and_clear_bit(IOC_CFQ_IOPRIO_CHANGED,
-					ioc->ioprio_changed)))
+	smp_read_barrier_depends();
+	if (unlikely(ioc->ioprio_changed))
 		cfq_ioc_set_ioprio(ioc);
 
 #ifdef CONFIG_CFQ_GROUP_IOSCHED
@@ -4031,11 +4015,6 @@ static void *cfq_init_queue(struct request_queue *q)
 
 	if (blkio_alloc_blkg_stats(&cfqg->blkg)) {
 		kfree(cfqg);
-
-		spin_lock(&cic_index_lock);
-		ida_remove(&cic_index_ida, cfqd->cic_index);
-		spin_unlock(&cic_index_lock);
-
 		kfree(cfqd);
 		return NULL;
 	}
