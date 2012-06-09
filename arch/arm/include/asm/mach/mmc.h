@@ -37,6 +37,11 @@ struct msm_mmc_reg_data {
 	 * is set voltage supported for this regulator?
 	 * false => set voltage is not supported
 	 * true  => set voltage is supported
+	 *
+	 * Some regulators (like gpio-regulators, LVS (low voltage swtiches)
+	 * PMIC regulators) dont have the capability to call
+	 * regulator_set_voltage or regulator_set_optimum_mode
+	 * Use this variable to indicate if its a such regulator or not
 	 */
 	bool set_voltage_sup;
 	/* is this regulator enabled? */
@@ -119,42 +124,40 @@ struct mmc_platform_data {
 	 * XPC controls the maximum current in the
 	 * default speed mode of SDXC card.
 	 */
-	unsigned int *slot_type;
 	unsigned int xpc_cap;
 	/* Supported UHS-I Modes */
 	unsigned int uhs_caps;
 	void (*sdio_lpm_gpio_setup)(struct device *, unsigned int);
         unsigned int status_irq;
 	unsigned int status_gpio;
+	/* Indicates the polarity of the GPIO line when card is inserted */
+	bool is_status_gpio_active_low;
         unsigned int sdiowakeup_irq;
         unsigned long irq_flags;
-	unsigned dat0_gpio;
         unsigned long mmc_bus_width;
         int (*wpswitch) (struct device *);
-    int dummy52_required;
 	unsigned int msmsdcc_fmin;
 	unsigned int msmsdcc_fmid;
 	unsigned int msmsdcc_fmax;
 	bool nonremovable;
 	bool pclk_src_dfab;
 	int (*cfg_mpm_sdiowakeup)(struct device *, unsigned);
-	bool sdcc_v4_sup;
 	unsigned int wpswitch_gpio;
 	unsigned char wpswitch_polarity;
 	struct msm_mmc_slot_reg_data *vreg_data;
 	int is_sdio_al_client;
-#ifdef CONFIG_MSM_SDIO_AL
-	void (*trigger_mdm_fatal)(void);
-	int (*get_mdm2ap_status)(void);
-#endif
 	unsigned int *sup_clk_table;
 	unsigned char sup_clk_cnt;
 	struct msm_mmc_pin_data *pin_data;
 	bool disable_bam;
 	bool disable_runtime_pm;
 	bool disable_cmd23;
-	int emmc_dma_ch;
 	u32 swfi_latency;
+
+	/* HTC extension */
+	unsigned int *slot_type;
+	bool sdcc_v4_sup;
+	int emmc_dma_ch;
 };
 
 #endif
