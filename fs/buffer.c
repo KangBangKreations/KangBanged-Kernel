@@ -977,7 +977,6 @@ init_page_buffers(struct page *page, struct block_device *bdev,
 			bh->b_blocknr = block;
 			if (uptodate)
 				set_buffer_uptodate(bh);
-			if (block < end_block)
 				set_buffer_mapped(bh);
 		}
 		block++;
