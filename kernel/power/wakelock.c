@@ -234,6 +234,33 @@ static void print_active_locks(int type)
 	}
 }
 
+#ifdef CONFIG_ARCH_MSM8X60_LTE
+void htc_print_active_wake_locks(int type)
+{
+	struct wake_lock *lock;
+	unsigned long irqflags;
+	spin_lock_irqsave(&list_lock, irqflags);
+	if((!list_empty(&active_wake_locks[type]))){
+		if(type==WAKE_LOCK_IDLE)
+			printk("idle lock: ");
+		else
+			printk("wakelock: ");
+		list_for_each_entry(lock, &active_wake_locks[type], link) {
+			if (lock->flags & WAKE_LOCK_AUTO_EXPIRE) {
+				long timeout = lock->expires - jiffies;
+				if (timeout > 0)
+					printk(" '%s', time left %ld; ",
+						lock->name, timeout);
+			} else {
+				printk(" '%s' ", lock->name);
+			}
+		}
+		printk("\n");
+	}
+	spin_unlock_irqrestore(&list_lock, irqflags);
+}
+#endif
+
 static long has_wake_lock_locked(int type)
 {
 	struct wake_lock *lock, *n;
@@ -340,11 +367,14 @@ static void suspend(struct work_struct *work)
 {
 	int ret;
 	int entry_event_num;
-	struct timespec ts_entry, ts_exit;
 
+	pr_info("[R] suspend start\n");
 	if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
-		if (debug_mask & DEBUG_SUSPEND)
-			pr_info("suspend: abort suspend\n");
+		#ifdef CONFIG_ARCH_MSM8X60_LTE
+		printk("[PM]Warning: Wakelock exists while %s\n",__func__);
+		htc_print_active_wake_locks(WAKE_LOCK_SUSPEND);
+		#endif
+		pr_info("[R] suspend: abort suspend\n");
 		return;
 	}
 
@@ -410,6 +440,13 @@ static int power_suspend_late(struct device *dev)
 #endif
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("power_suspend_late return %d\n", ret);
+
+	#ifdef CONFIG_ARCH_MSM8X60_LTE
+	if (ret == -EAGAIN) {
+		printk("[PM]Warning: Wakelock exists while %s\n",__func__);
+		htc_print_active_wake_locks(WAKE_LOCK_SUSPEND);
+	}
+	#endif
 	return ret;
 }
 
