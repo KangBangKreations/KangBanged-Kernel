@@ -19,7 +19,6 @@
 #include <linux/suspend.h>
 #include <linux/syscalls.h> /* sys_sync */
 #include <linux/wakelock.h>
-#include <linux/syscore_ops.h>
 #ifdef CONFIG_WAKELOCK_STAT
 #include <linux/proc_fs.h>
 #endif
@@ -51,9 +50,12 @@ static struct workqueue_struct *suspend_sys_sync_work_queue;
 static DECLARE_COMPLETION(suspend_sys_sync_comp);
 struct workqueue_struct *suspend_work_queue;
 struct wake_lock main_wake_lock;
-struct wake_lock no_suspend_wake_lock;
 suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
 static struct wake_lock unknown_wakeup;
+static struct wake_lock suspend_backoff_lock;
+
+#define SUSPEND_BACKOFF_THRESHOLD	10
+#define SUSPEND_BACKOFF_INTERVAL	10000
 
 #ifdef CONFIG_WAKELOCK_STAT
 static struct wake_lock deleted_wake_locks;
@@ -411,7 +413,7 @@ static void expire_wake_locks(unsigned long data)
 }
 static DEFINE_TIMER(expire_timer, expire_wake_locks, 0, 0);
 
-static int power_suspend_late(void)
+static int power_suspend_late(struct device *dev)
 {
 	int ret = has_wake_lock(WAKE_LOCK_SUSPEND) ? -EAGAIN : 0;
 #ifdef CONFIG_WAKELOCK_STAT
@@ -429,8 +431,16 @@ static int power_suspend_late(void)
 	return ret;
 }
 
-static struct syscore_ops power_syscore_ops = {
-	.suspend = power_suspend_late,
+static struct dev_pm_ops power_driver_pm_ops = {
+	.suspend_noirq = power_suspend_late,
+};
+
+static struct platform_driver power_driver = {
+	.driver.name = "power",
+	.driver.pm = &power_driver_pm_ops,
+};
+static struct platform_device power_device = {
+	.name = "power",
 };
 
 void wake_lock_init(struct wake_lock *lock, int type, const char *name)
@@ -650,9 +660,19 @@ static int __init wakelocks_init(void)
 	wake_lock_init(&main_wake_lock, WAKE_LOCK_SUSPEND, "main");
 	wake_lock(&main_wake_lock);
 	wake_lock_init(&unknown_wakeup, WAKE_LOCK_SUSPEND, "unknown_wakeups");
-	wake_lock_init(&no_suspend_wake_lock, WAKE_LOCK_SUSPEND, "no_suspend_wake_lock");
+	wake_lock_init(&suspend_backoff_lock, WAKE_LOCK_SUSPEND,
+		       "suspend_backoff");
 
-	register_syscore_ops(&power_syscore_ops);
+	ret = platform_device_register(&power_device);
+	if (ret) {
+		pr_err("wakelocks_init: platform_device_register failed\n");
+		goto err_platform_device_register;
+	}
+	ret = platform_driver_register(&power_driver);
+	if (ret) {
+		pr_err("wakelocks_init: platform_driver_register failed\n");
+		goto err_platform_driver_register;
+	}
 
 	INIT_COMPLETION(suspend_sys_sync_comp);
 	suspend_sys_sync_work_queue =
@@ -674,12 +694,15 @@ static int __init wakelocks_init(void)
 
 	return 0;
 
-err_suspend_sys_sync_work_queue:
 err_suspend_work_queue:
-	unregister_syscore_ops(&power_syscore_ops);
+err_suspend_sys_sync_work_queue:
+	platform_driver_unregister(&power_driver);
+err_platform_driver_register:
+	platform_device_unregister(&power_device);
+err_platform_device_register:
+	wake_lock_destroy(&suspend_backoff_lock);
 	wake_lock_destroy(&unknown_wakeup);
 	wake_lock_destroy(&main_wake_lock);
-	wake_lock_destroy(&no_suspend_wake_lock);
 #ifdef CONFIG_WAKELOCK_STAT
 	wake_lock_destroy(&deleted_wake_locks);
 #endif
@@ -693,10 +716,11 @@ static void  __exit wakelocks_exit(void)
 #endif
 	destroy_workqueue(suspend_work_queue);
 	destroy_workqueue(suspend_sys_sync_work_queue);
-	unregister_syscore_ops(&power_syscore_ops);
+	platform_driver_unregister(&power_driver);
+	platform_device_unregister(&power_device);
+	wake_lock_destroy(&suspend_backoff_lock);
 	wake_lock_destroy(&unknown_wakeup);
 	wake_lock_destroy(&main_wake_lock);
-	wake_lock_destroy(&no_suspend_wake_lock);
 #ifdef CONFIG_WAKELOCK_STAT
 	wake_lock_destroy(&deleted_wake_locks);
 #endif
