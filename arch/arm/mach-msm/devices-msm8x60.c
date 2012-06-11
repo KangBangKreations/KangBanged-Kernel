@@ -925,7 +925,7 @@ static struct resource kgsl_3d0_resources[] = {
 
 static struct kgsl_device_platform_data kgsl_3d0_pdata = {
 	.pwrlevel = {
-#ifdef MSM_KGSL_3D_GPUOC
+#ifdef CONFIG_MSM_KGSL_3D_GPUOC
 		{
 			.gpu_freq = 360000000,
 			.bus_freq = 4,
@@ -1016,7 +1016,7 @@ static struct resource kgsl_2d0_resources[] = {
 static struct kgsl_device_platform_data kgsl_2d0_pdata = {
 	.pwrlevel = {
 		{
-#ifdef MSM_KGSL_2D_GPUOC
+#ifdef CONFIG_MSM_KGSL_2D_GPUOC
 			.gpu_freq = 300000000,
 #else
 			.gpu_freq = 228571000,
