@@ -896,7 +896,21 @@ config MSM_KGSL_BUSOC
 	bool "Overclock Bus KGSL Bus Frequencies"
 	default n
 	help
-	  Overclock KGSL Bus 3d and 2d Bus Frequencies.
+	  Increase KGSL Bus 3d and 2d Bus Frequencies.
+
+config MSM_KGSL_3D_GPUOC
+	bool "Overclock 3d GPU Clocks"
+	default n
+	depends on MSM_KGSL_BUSOC
+	help
+	  Increase MSM GPU 3d Frequencies.
+
+config MSM_KGSL_2D_GPUOC
+	bool "Overclock 2d GPU Clocks"
+	default n
+	depends on MSM_KGSL_BUSOC
+	help
+	  Increase MSM GPU 2d Frequencies.
 
 config MSM_AMSS_VERSION
 	int
