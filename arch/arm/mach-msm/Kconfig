@@ -892,6 +892,12 @@ config SHOOTER_PMEM
 	help
 	  Enable larger Shooter Pmem Allocation sizes.
 
+config MSM_KGSL_BUSOC
+	bool "Overclock Bus KGSL Bus Frequencies"
+	default n
+	help
+	  Overclock KGSL Bus 3d and 2d Bus Frequencies.
+
 config MSM_AMSS_VERSION
 	int
 	default 6210 if MSM_AMSS_VERSION_6210
