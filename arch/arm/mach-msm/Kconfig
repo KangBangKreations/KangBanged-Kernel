@@ -893,7 +893,7 @@ config SHOOTER_PMEM
 	  Enable larger Shooter Pmem Allocation sizes.
 
 config MSM_BUS_HIGHOC
-	BOOL "Increase 8x60 acpu bus clocks to MAX"
+	bool "Increase 8x60 acpu bus clocks to MAX"
 	default n
 	help
 	  Shift entire 8x60 bus clocks up to 473MHz max
