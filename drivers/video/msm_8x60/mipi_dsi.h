@@ -31,7 +31,6 @@
 #define MIPI_DSI_H
 
 #include <mach/scm-io.h>
-#include "msm_fb_panel.h"
 
 #ifdef BIT
 #undef BIT
