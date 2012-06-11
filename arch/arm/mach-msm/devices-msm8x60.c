@@ -1019,12 +1019,12 @@ static struct kgsl_device_platform_data kgsl_2d0_pdata = {
 #ifdef MSM_KGSL_2D_GPUOC
 			.gpu_freq = 300000000,
 #else
-			.gpu_freq = 200000000,
+			.gpu_freq = 228571000,
 #endif
 			.bus_freq = 1,
 		},
 		{
-			.gpu_freq = 200000000,
+			.gpu_freq = 228571000,
 			.bus_freq = 0,
 		},
 	},
