@@ -61,11 +61,6 @@ static int __init cy8c_read_fstchrg_cmdline(char *fstchrg)
   return 1;
 }
 __setup("fstchrg=", cy8c_read_fstchrg_cmdline);
-
-#else
-
-  force_charge_mode = 0;
-
 #endif
 
 static int __init force_charge_mode_init(void)
