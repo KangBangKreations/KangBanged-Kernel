@@ -2290,7 +2290,8 @@ static int copy_and_check(struct load_info *info,
 		return -ENOEXEC;
 
 	/* Suck in entire file: we'll want most of it. */
-	if ((hdr = vmalloc(len)) == NULL)
+	/* vmalloc barfs on "unusual" numbers.  Check here */
+	if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
 		return -ENOMEM;
 
 	if (copy_from_user(hdr, umod, len) != 0) {
@@ -2558,7 +2559,7 @@ static int move_module(struct module *mod, struct load_info *info)
 	 * after the module is initialized.
 	 */
 	kmemleak_ignore(ptr);
-	if (!ptr) {
+	if (!ptr && mod->init_size) {
 		module_free(mod, mod->module_core);
 		return -ENOMEM;
 	}

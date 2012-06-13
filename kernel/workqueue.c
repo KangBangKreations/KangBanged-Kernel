@@ -44,28 +44,6 @@
 
 #include "workqueue_sched.h"
 
-#define WQ_NAME			"events"
-#define WQ_HIST_LEN			(20)
-
-
-static int wq_pos = 0;
-static unsigned long wq_hist[WQ_HIST_LEN];
-int print_workqueue(void)
-{
-	char func_sym[KSYM_SYMBOL_LEN];
-	int i = wq_pos, count = 0;
-
-	do {
-		sprint_symbol(func_sym, wq_hist[i]);
-		printk(KERN_INFO "[wq_list] %s[%d]: %s\n", WQ_NAME, count--, func_sym);
-
-		if (--i < 0)
-			i = WQ_HIST_LEN - 1;
-	} while (wq_pos != i);
-
-	return 0;
-}
-
 enum {
 	/* global_cwq flags */
 	GCWQ_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
@@ -1236,13 +1214,8 @@ static void worker_enter_idle(struct worker *worker)
 	} else
 		wake_up_all(&gcwq->trustee_wait);
 
-	/*
-	 * Sanity check nr_running.  Because trustee releases gcwq->lock
-	 * between setting %WORKER_ROGUE and zapping nr_running, the
-	 * warning may trigger spuriously.  Check iff trustee is idle.
-	 */
-	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
-		     gcwq->nr_workers == gcwq->nr_idle &&
+	/* sanity check nr_running */
+	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
 		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
 }
 
