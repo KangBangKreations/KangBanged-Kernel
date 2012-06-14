@@ -25,7 +25,6 @@ obj-$(CONFIG_AMP_TPA2051D3)		+= tpa2051d3.o
 obj-$(CONFIG_INPUT_ISL29028)	+= isl29028.o
 obj-$(CONFIG_INPUT_ISL29029)	+= isl29029.o
 obj-$(CONFIG_TPS65200)          += tps65200.o
-obj-$(CONFIG_FORCE_FAST_CHARGE)         += fastchg.o
 obj-$(CONFIG_CODEC_AIC3254)      += aic3254.o
 ifeq ($(CONFIG_I2C_DEBUG_CHIP),y)
 EXTRA_CFLAGS += -DDEBUG

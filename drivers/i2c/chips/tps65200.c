@@ -30,7 +30,6 @@
 #include <linux/usb/android_composite.h>
 #include <mach/board_htc.h>
 #include <mach/board.h>
-#include <linux/fastchg.h>
 #if defined(CONFIG_MACH_HOLIDAY)
 #define AC_CURRENT_SWTICH_DELAY_200MS		200
 #define AC_CURRENT_SWTICH_DELAY_100MS		100
@@ -299,9 +298,6 @@ u32 htc_fake_charger_for_testing(u32 ctl)
 {
 	u32 new_ctl = POWER_SUPPLY_ENABLE_FAST_CHARGE;
 
-  if((ctl > POWER_SUPPLY_ENABLE_INTERNAL) || (ctl == POWER_SUPPLY_DISABLE_CHARGE))
-    return ctl;
-
 #if defined(CONFIG_MACH_VERDI_LTE)
 	new_ctl = POWER_SUPPLY_ENABLE_9VAC_CHARGE;
 #else
@@ -365,11 +361,6 @@ int tps_set_charger_ctrl(u32 ctl)
 		alarm_cancel(&tps65200_check_alarm);
 		break;
 	case POWER_SUPPLY_ENABLE_SLOW_CHARGE:
-		if(force_charge_mode == 0)
-		break;
-		else
-		tps_set_charger_ctrl(POWER_SUPPLY_ENABLE_FAST_CHARGE);
-		break;
 	case POWER_SUPPLY_ENABLE_WIRELESS_CHARGE:
 		tps65200_dump_register();
 		tps65200_i2c_write_byte(0x29, 0x01);
