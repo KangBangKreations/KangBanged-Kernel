@@ -760,7 +760,7 @@ static struct msm_bus_vectors grp3d_nominal_low_vectors[] = {
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
 		.ab = 0,
 #ifdef CONFIG_MSM_KGSL_BUSOC
-		.ib = KGSL_CONVERT_TO_MBPS(2484),
+		.ib = KGSL_CONVERT_TO_MBPS(2096),
 #else
 		.ib = KGSL_CONVERT_TO_MBPS(1300),
 #endif
@@ -773,7 +773,7 @@ static struct msm_bus_vectors grp3d_nominal_high_vectors[] = {
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
 		.ab = 0,
 #ifdef CONFIG_MSM_KGSL_BUSOC
-		.ib = KGSL_CONVERT_TO_MBPS(2976),
+		.ib = KGSL_CONVERT_TO_MBPS(2484),
 #else
 		.ib = KGSL_CONVERT_TO_MBPS(2008),
 #endif
@@ -786,7 +786,7 @@ static struct msm_bus_vectors grp3d_max_vectors[] = {
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
 		.ab = 0,
 #ifdef CONFIG_MSM_KGSL_BUSOC
-		.ib = KGSL_CONVERT_TO_MBPS(3530),
+		.ib = KGSL_CONVERT_TO_MBPS(2976),
 #else
 		.ib = KGSL_CONVERT_TO_MBPS(2484),
 #endif
@@ -837,7 +837,7 @@ static struct msm_bus_vectors grp2d0_max_vectors[] = {
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
 		.ab = 0,
 #ifdef CONFIG_MSM_KGSL_BUSOC
-		.ib = KGSL_CONVERT_TO_MBPS(2484),
+		.ib = KGSL_CONVERT_TO_MBPS(2096),
 #else
 		.ib = KGSL_CONVERT_TO_MBPS(990),
 #endif
@@ -876,7 +876,7 @@ static struct msm_bus_vectors grp2d1_max_vectors[] = {
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
 		.ab = 0,
 #ifdef CONFIG_MSM_KGSL_BUSOC
-		.ib = KGSL_CONVERT_TO_MBPS(2484),
+		.ib = KGSL_CONVERT_TO_MBPS(2096),
 #else
 		.ib = KGSL_CONVERT_TO_MBPS(990),
 #endif
