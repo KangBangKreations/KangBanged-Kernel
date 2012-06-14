@@ -132,7 +132,7 @@ enum pm8058_smpl_delay {
 };
 
 struct pm8058_platform_data {
-#ifdef CONFIG_BOARD_VIGOR
+#ifdef CONFIG_MACH_VIGOR
 	int		irq_base;
 #endif
 	struct pm8xxx_mpp_platform_data		*mpp_pdata;

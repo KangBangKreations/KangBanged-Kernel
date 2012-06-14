@@ -449,7 +449,7 @@ struct msm_panel_common_pdata {
 	int (*bkl_enable)(int);
 	int fpga_3d_config_addr;
 	struct gamma_curvy *abl_gamma_tbl;
-#ifdef CONFIG_BOARD_VIGOR
+#ifdef CONFIG_MACH_VIGOR
         struct mdp_reg *color_enhancment_tbl;
 #endif
 };

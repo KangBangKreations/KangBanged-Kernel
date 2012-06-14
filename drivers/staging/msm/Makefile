@@ -70,7 +70,7 @@ obj-$(CONFIG_FB_MSM_MDDI_TOSHIBA_WVGA_PORTRAIT) += mddi_toshiba_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MDDI_SHARP_QVGA_128x128) += mddi_sharp.o
 endif
 
-ifeq ($(CONFIG_BOARD_VIGOR),y)
+ifeq ($(CONFIG_MACH_VIGOR),y)
 obj-$(CONFIG_FB_MSM_MDDI_TOSHIBA_WVGA_PORTRAIT) += mddi_toshiba_wvga.o
 endif
 

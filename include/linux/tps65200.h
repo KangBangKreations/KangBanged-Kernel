@@ -59,7 +59,7 @@ struct tps65200_chg_int_notifier {
 extern u8 batt_charging_state;
 #endif
 
-#if defined(CONFIG_BOARD_VIGOR)
+#if defined(CONFIG_MACH_VIGOR)
 extern u8 batt_charging_state;
 #endif
 
