@@ -507,7 +507,11 @@ static int bma250_init(void *mlsl_handle,
 	bma250_set_odr(mlsl_handle, pdata, &private_data->suspend,
 			FALSE, 0);
 	bma250_set_odr(mlsl_handle, pdata, &private_data->resume,
+#ifdef CONFIG_BOARD_VIGOR
+			FALSE, 25000);
+#else
 			TRUE, 25000);
+#endif
 	bma250_set_fsr(mlsl_handle, pdata, &private_data->suspend,
 			FALSE, 2048);
 	bma250_set_fsr(mlsl_handle, pdata, &private_data->resume,
