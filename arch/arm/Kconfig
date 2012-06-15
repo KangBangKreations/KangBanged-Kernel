@@ -62,6 +62,12 @@ config KTIME_SCALAR
 	bool
 	default y
 
+config STRING_OPTIMIZE
+	bool
+	default y
+	help
+	  Optimize string library code with -O3 instead of -Os.
+
 config HAVE_TCM
 	bool
 	select GENERIC_ALLOCATOR
