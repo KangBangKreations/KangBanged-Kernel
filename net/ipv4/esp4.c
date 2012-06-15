@@ -457,28 +457,22 @@ static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
 	struct esp_data *esp = x->data;
 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
 	u32 align = max_t(u32, blksize, esp->padlen);
-	u32 rem;
-
-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
-	rem = mtu & (align - 1);
-	mtu &= ~(align - 1);
+	unsigned int net_adj;
 
 	switch (x->props.mode) {
+	case XFRM_MODE_TRANSPORT:
+	case XFRM_MODE_BEET:
+		net_adj = sizeof(struct iphdr);
+		break;
 	case XFRM_MODE_TUNNEL:
+		net_adj = 0;
 		break;
 	default:
-	case XFRM_MODE_TRANSPORT:
-		/* The worst case */
-		mtu -= blksize - 4;
-		mtu += min_t(u32, blksize - 4, rem);
-		break;
-	case XFRM_MODE_BEET:
-		/* The worst case. */
-		mtu += min_t(u32, IPV4_BEET_PHMAXLEN, rem);
-		break;
+		BUG();
 	}
 
-	return mtu - 2;
+	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
+		 net_adj) & ~(align - 1)) + (net_adj - 2);
 }
 
 static void esp4_err(struct sk_buff *skb, u32 info)
@@ -599,13 +593,6 @@ static int esp_init_authenc(struct xfrm_state *x)
 
 		aalg_desc = xfrm_aalg_get_byname(x->aalg->alg_name, 0);
 		BUG_ON(!aalg_desc);
-
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-		if (IS_ERR(aalg_desc) || (!aalg_desc)) {
-			printk(KERN_ERR "[NET] aalg_desc is NULL in %s!\n", __func__);
-			goto free_key;
-		}
-#endif
 
 		err = -EINVAL;
 		if (aalg_desc->uinfo.auth.icv_fullbits/8 !=
