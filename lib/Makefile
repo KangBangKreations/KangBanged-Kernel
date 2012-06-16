@@ -31,6 +31,10 @@ ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
 CFLAGS_bitmap.o += -Os
 endif
 
+ifeq ($(CONFIG_CC_OPTIMIZE_DEFAULT),y)
+CFLAGS_bitmap.o += -Os
+endif
+
 ifeq ($(CONFIG_DEBUG_KOBJECT),y)
 CFLAGS_kobject.o += -DDEBUG
 CFLAGS_kobject_uevent.o += -DDEBUG

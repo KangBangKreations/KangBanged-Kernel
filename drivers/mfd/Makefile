@@ -53,6 +53,10 @@ ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
 CFLAGS_timpani-codec.o += -Os
 endif
 
+ifeq ($(CONFIG_CC_OPTIMIZE_DEFAULT),y)
+CFLAGS_timpani-codec.o += -Os
+endif
+
 ifdef CONFIG_TIMPANI_CODEC
 obj-$(CONFIG_TIMPANI_CODEC) += msm-adie-codec.o
 else ifdef CONFIG_MARIMBA_CODEC
