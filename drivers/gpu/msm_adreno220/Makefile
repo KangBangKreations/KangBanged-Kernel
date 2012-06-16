@@ -37,3 +37,22 @@ msm_z180-objs = $(msm_z180-y)
 obj-$(CONFIG_MSM_KGSL) += msm_kgsl_core.o
 obj-$(CONFIG_MSM_KGSL) += msm_adreno.o
 obj-$(CONFIG_MSM_KGSL_2D) += msm_z180.o
+
+ifeq ($(CONFIG_COMPILER_GPU_SIZE),y)
+CFLAGS_kgsl.o += -Os
+CFLAGS_kgsl_trace.o += -Os
+CFLAGS_kgsl_sharedmem.o += -Os
+CFLAGS_kgsl_pwrctrl.o += -Os
+CFLAGS_kgsl_mmu.o += -Os
+CFLAGS_kgsl_gpummu.o += -Os
+CFLAGS_kgsl_iommu.o += -Os
+CFLAGS_adreno_ringbuffer.o += -Os
+CFLAGS_adreno_drawctxt.o += -Os
+CFLAGS_adreno_postmortem.o += -Os
+CFLAGS_adreno_a2xx.o += -Os
+CFLAGS_adreno_a2xx_trace.o += -Os
+CFLAGS_adreno.o += -Os
+CFLAGS_msm_kgsl_core.o += -Os
+CFLAGS_msm_adreno.o += -Os
+CFLAGS_msm_z180.o += -Os
+endif

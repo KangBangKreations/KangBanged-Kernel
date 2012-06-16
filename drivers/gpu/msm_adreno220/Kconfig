@@ -8,6 +8,12 @@ config MSM_KGSL
 	  3D graphics driver. Required to use hardware accelerated
 	  OpenGL ES 2.0 and 1.1.
 
+config MSM_COMPILER_GPU_SIZE
+	boolean "Adreno KGSL -Os compile"
+	default n
+	---help---
+	  Compile Adreno and KGSL with -Os to override CFlag
+
 config MSM_KGSL_CFF_DUMP
 	bool "Enable KGSL Common File Format (CFF) Dump Feature [Use with caution]"
 	default n
