@@ -69,7 +69,7 @@ obj-$(CONFIG_SPI_SPIDEV)	+= spidev.o
 obj-$(CONFIG_SPI_TLE62X0)	+= tle62x0.o
 # 	... add above this line ...
 
-ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
+ifeq ($(CONFIG_COMPILER_SPI_SIZE),y)
 CFLAGS_spi.o += -Os
 CFLAGS_spidev.o += -Os
 endif
