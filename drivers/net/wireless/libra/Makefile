@@ -12,3 +12,7 @@ ifdef CONFIG_ARCH_MSM7X27A
 endif
 
 obj-$(CONFIG_LIBRA_SDIOIF) += librasdioif.o
+
+ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
+CFLAGS_librasdioif.o += -Os
+endif
