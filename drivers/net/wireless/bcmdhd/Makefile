@@ -50,6 +50,37 @@ DHDOFILES += wl_linux_mon.o wl_cfg80211.o wl_cfgp2p.o
 
 
 obj-$(CONFIG_BCMDHD) += bcmdhd.o
+
+ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
+CFLAGS_bcmdhd.o += -Os
+CFLAGS_wl_linux_mon.o += -Os
+CFLAGS_wl_cfg80211.o += -Os
+CFLAGS_dhd_linux.o += -Os
+CFLAGS_linux_osl.o += -Os
+CFLAGS_bcmutils.o += -Os
+CFLAGS_dhd_common.o += -Os
+CFLAGS_dhd_custom_gpio.o += -Os
+CFLAGS_siutils.o += -Os
+CFLAGS_sbutils.o += -Os
+CFLAGS_aiutils.o += -Os
+CFLAGS_hndpmu.o += -Os
+CFLAGS_bcmwifi.o += -Os
+CFLAGS_dhd_sdio.o += -Os
+CFLAGS_dhd_linux_sched.o += -Os
+CFLAGS_dhd_cdc.o += -Os
+CFLAGS_bcmsdh_sdmmc.o += -Os
+CFLAGS_bcmsdh.o += -Os
+CFLAGS_bcmsdh_linux.o += -Os
+CFLAGS_bcmsdh_sdmmmc_linux.o += -Os
+CFLAGS_bcmevent.o += -Os
+CFLAGS_dhd_bta.o += -Os
+CFLAGS_wl_android.o += -Os
+CFLAGS_wldev_common.o += -Os
+CFLAGS_wl_cfg80211.o += -Os
+CFLAGS_wl_cfgp2p.o += -Os
+CFLAGS_dhd_cfg80211.o += -Os
+endif
+
 bcmdhd-objs += $(DHDOFILES)
 ifneq ($(CONFIG_WIRELESS_EXT),)
 bcmdhd-objs += wl_iw.o
