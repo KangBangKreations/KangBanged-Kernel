@@ -13,6 +13,6 @@ endif
 
 obj-$(CONFIG_LIBRA_SDIOIF) += librasdioif.o
 
-ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
+ifeq ($(CONFIG_COMPILER_LIBRA_SIZE),y)
 CFLAGS_librasdioif.o += -Os
 endif
