@@ -283,6 +283,12 @@ config LIBRA_SDIOIF
 	---help---
 	  A driver for Qualcomm WLAN SDIO Libra chipset.
 
+config COMPILER_LIBRA_SIZE
+	boolean "Libra -Os Compile"
+	default n
+	help
+	  Compile Librasdioif with -Os to override CFlag.
+
 config WCNSS_CORE
 	tristate "Qualcomm WCNSS CORE driver"
 	depends on ARCH_MSM8960

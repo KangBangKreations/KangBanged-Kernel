@@ -137,7 +137,7 @@ config COMPILER_SPI_SIZE
 	boolean "SPI -Os Compile"
 	default n
 	help
-	  Compile SPI with -Os to override local CFlag.
+	  Compile SPI with -Os to override CFlag.
 
 config SPI_DAVINCI
 	tristate "Texas Instruments DaVinci/DA8x/OMAP-L/AM1x SoC SPI controller"
