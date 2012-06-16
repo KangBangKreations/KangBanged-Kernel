@@ -64,7 +64,7 @@ config KTIME_SCALAR
 
 config STRING_OPTIMIZE
 	bool
-	default y
+	default n
 	help
 	  Optimize string library code with -O3 instead of -Os.
 
