@@ -51,7 +51,7 @@ DHDOFILES += wl_linux_mon.o wl_cfg80211.o wl_cfgp2p.o
 
 obj-$(CONFIG_BCMDHD) += bcmdhd.o
 
-ifeq ($(CONFIG_CC_OPTIMIZE_ALOT),y)
+ifeq ($(CONFIG_COMPILER_BCMDHD_SIZE),y)
 CFLAGS_bcmdhd.o += -Os
 CFLAGS_wl_linux_mon.o += -Os
 CFLAGS_wl_cfg80211.o += -Os

@@ -19,6 +19,12 @@ config BCMDHD_FW_PATH
 	---help---
 	  Path to the firmware file.
 
+config COMPILER_BCMDHD_SIZE
+	boolean "bcmdhd -Os Compile"
+	default n
+	---help---
+	  Compile bcmdhd with -Os to override CFlag.
+
 config BCMDHD_NVRAM_PATH
 	depends on BCMDHD
 	string "NVRAM path"
