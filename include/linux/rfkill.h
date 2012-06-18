@@ -46,7 +46,6 @@ enum rfkill_type {
 	RFKILL_TYPE_UWB,
 	RFKILL_TYPE_WIMAX,
 	RFKILL_TYPE_WWAN,
-	RFKILL_TYPE_FMTX,
 	RFKILL_TYPE_GPS,
 	RFKILL_TYPE_FM,
 	NUM_RFKILL_TYPES,
@@ -118,10 +117,10 @@ enum rfkill_user_states {
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
-#include <linux/device.h>
 #include <linux/leds.h>
 #include <linux/err.h>
 
+struct device;
 /* this is opaque */
 struct rfkill;
 

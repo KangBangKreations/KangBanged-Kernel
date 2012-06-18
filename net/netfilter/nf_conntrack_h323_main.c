@@ -42,7 +42,7 @@ static int gkrouted_only __read_mostly = 1;
 module_param(gkrouted_only, int, 0600);
 MODULE_PARM_DESC(gkrouted_only, "only accept calls from gatekeeper");
 
-static int callforward_filter __read_mostly = 1;
+static bool callforward_filter __read_mostly = true;
 module_param(callforward_filter, bool, 0600);
 MODULE_PARM_DESC(callforward_filter, "only create call forwarding expectations "
 				     "if both endpoints are on different sides "
@@ -123,11 +123,6 @@ static int get_tpkt_data(struct sk_buff *skb, unsigned int protoff,
 	unsigned char *tpkt;
 	int tpktlen;
 	int tpktoff;
-
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-	if (IS_ERR(info) || (!info))
-		printk(KERN_ERR "[NET] info is NULL in %s!\n", __func__);
-#endif
 
 	/* Get TCP header */
 	th = skb_header_pointer(skb, protoff, sizeof(_tcph), &_tcph);
@@ -275,9 +270,8 @@ static int expect_rtp_rtcp(struct sk_buff *skb, struct nf_conn *ct,
 		return 0;
 
 	/* RTP port is even */
-	port &= htons(~1);
-	rtp_port = port;
-	rtcp_port = htons(ntohs(port) + 1);
+	rtp_port = port & ~htons(1);
+	rtcp_port = port | htons(1);
 
 	/* Create expect for RTP */
 	if ((rtp_exp = nf_ct_expect_alloc(ct)) == NULL)
@@ -610,8 +604,7 @@ static int h245_help(struct sk_buff *skb, unsigned int protoff,
 
       drop:
 	spin_unlock_bh(&nf_h323_lock);
-	if (net_ratelimit())
-		pr_info("nf_ct_h245: packet dropped\n");
+	net_info_ratelimited("nf_ct_h245: packet dropped\n");
 	return NF_DROP;
 }
 
@@ -748,17 +741,16 @@ static int callforward_do_filter(const union nf_inet_addr *src,
 		}
 		break;
 	}
-#if defined(CONFIG_NF_CONNTRACK_IPV6) || \
-    defined(CONFIG_NF_CONNTRACK_IPV6_MODULE)
+#if IS_ENABLED(CONFIG_NF_CONNTRACK_IPV6)
 	case AF_INET6: {
 		struct flowi6 fl1, fl2;
 		struct rt6_info *rt1, *rt2;
 
 		memset(&fl1, 0, sizeof(fl1));
-		ipv6_addr_copy(&fl1.daddr, &src->in6);
+		fl1.daddr = src->in6;
 
 		memset(&fl2, 0, sizeof(fl2));
-		ipv6_addr_copy(&fl2.daddr, &dst->in6);
+		fl2.daddr = dst->in6;
 		if (!afinfo->route(&init_net, (struct dst_entry **)&rt1,
 				   flowi6_to_flowi(&fl1), false)) {
 			if (!afinfo->route(&init_net, (struct dst_entry **)&rt2,
@@ -1162,8 +1154,7 @@ static int q931_help(struct sk_buff *skb, unsigned int protoff,
 
       drop:
 	spin_unlock_bh(&nf_h323_lock);
-	if (net_ratelimit())
-		pr_info("nf_ct_q931: packet dropped\n");
+	net_info_ratelimited("nf_ct_q931: packet dropped\n");
 	return NF_DROP;
 }
 
@@ -1236,7 +1227,7 @@ static struct nf_conntrack_expect *find_expect(struct nf_conn *ct,
 
 /****************************************************************************/
 static int set_expect_timeout(struct nf_conntrack_expect *exp,
-			      unsigned timeout)
+			      unsigned int timeout)
 {
 	if (!exp || !del_timer(&exp->timeout))
 		return 0;
@@ -1261,11 +1252,6 @@ static int expect_q931(struct sk_buff *skb, struct nf_conn *ct,
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *exp;
 	typeof(nat_q931_hook) nat_q931;
-
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-	if (IS_ERR(info) || (!info))
-		printk(KERN_ERR "[NET] info is NULL in %s!\n", __func__);
-#endif
 
 	/* Look for the first related address */
 	for (i = 0; i < count; i++) {
@@ -1379,11 +1365,6 @@ static int process_rrq(struct sk_buff *skb, struct nf_conn *ct,
 
 	pr_debug("nf_ct_ras: RRQ\n");
 
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-	if (IS_ERR(info) || (!info))
-		printk(KERN_ERR "[NET] info is NULL in %s!\n", __func__);
-#endif
-
 	ret = expect_q931(skb, ct, ctinfo, data,
 			  rrq->callSignalAddress.item,
 			  rrq->callSignalAddress.count);
@@ -1420,11 +1401,6 @@ static int process_rcf(struct sk_buff *skb, struct nf_conn *ct,
 	typeof(set_sig_addr_hook) set_sig_addr;
 
 	pr_debug("nf_ct_ras: RCF\n");
-
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-	if (IS_ERR(info) || (!info))
-		printk(KERN_ERR "[NET] info is NULL in %s!\n", __func__);
-#endif
 
 	set_sig_addr = rcu_dereference(set_sig_addr_hook);
 	if (set_sig_addr && ct->status & IPS_NAT_MASK) {
@@ -1474,11 +1450,6 @@ static int process_urq(struct sk_buff *skb, struct nf_conn *ct,
 
 	pr_debug("nf_ct_ras: URQ\n");
 
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-	if (IS_ERR(info) || (!info))
-		printk(KERN_ERR "[NET] info is NULL in %s!\n", __func__);
-#endif
-
 	set_sig_addr = rcu_dereference(set_sig_addr_hook);
 	if (set_sig_addr && ct->status & IPS_NAT_MASK) {
 		ret = set_sig_addr(skb, ct, ctinfo, data,
@@ -1511,11 +1482,6 @@ static int process_arq(struct sk_buff *skb, struct nf_conn *ct,
 	typeof(set_h225_addr_hook) set_h225_addr;
 
 	pr_debug("nf_ct_ras: ARQ\n");
-
-#ifdef CONFIG_HTC_NETWORK_MODIFY
-	if (IS_ERR(info) || (!info))
-		printk(KERN_ERR "[NET] info is NULL in %s!\n", __func__);
-#endif
 
 	set_h225_addr = rcu_dereference(set_h225_addr_hook);
 	if ((arq->options & eAdmissionRequest_destCallSignalAddress) &&
@@ -1762,8 +1728,7 @@ static int ras_help(struct sk_buff *skb, unsigned int protoff,
 
       drop:
 	spin_unlock_bh(&nf_h323_lock);
-	if (net_ratelimit())
-		pr_info("nf_ct_ras: packet dropped\n");
+	net_info_ratelimited("nf_ct_ras: packet dropped\n");
 	return NF_DROP;
 }
 
@@ -1864,4 +1829,6 @@ MODULE_AUTHOR("Jing Min Zhao <zhaojingmin@users.sourceforge.net>");
 MODULE_DESCRIPTION("H.323 connection tracking helper");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("ip_conntrack_h323");
-MODULE_ALIAS_NFCT_HELPER("h323");
+MODULE_ALIAS_NFCT_HELPER("RAS");
+MODULE_ALIAS_NFCT_HELPER("Q.931");
+MODULE_ALIAS_NFCT_HELPER("H.245");

@@ -11,6 +11,7 @@
 struct irq_affinity_notify;
 struct proc_dir_entry;
 struct timer_rand_state;
+struct module;
 /**
  * struct irq_desc - interrupt descriptor
  * @irq_data:		per irq and chip data passed down to chip functions
@@ -129,7 +130,6 @@ static inline void __irq_set_handler_locked(unsigned int irq,
 	struct irq_desc *desc;
 
 	desc = irq_to_desc(irq);
-	BUG_ON(!desc);
 	desc->handle_irq = handler;
 }
 

@@ -33,7 +33,6 @@ struct led_classdev {
 	int			 brightness;
 	int			 max_brightness;
 	int			 flags;
-	int			 offset;
 
 	/* Lower 16 bits reflect status */
 #define LED_SUSPENDED		(1 << 0)
@@ -74,10 +73,10 @@ struct led_classdev {
 	struct led_trigger	*trigger;
 	struct list_head	 trig_list;
 	void			*trigger_data;
+	/* true if activated - deactivate routine uses it to do cleanup */
+	bool			activated;
 #endif
 };
-
-extern void led_brightness_switch(const char * const led_name, const enum led_brightness brightness);
 
 extern int led_classdev_register(struct device *parent,
 				 struct led_classdev *led_cdev);

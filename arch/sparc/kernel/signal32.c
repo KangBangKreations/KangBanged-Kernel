@@ -28,10 +28,9 @@
 #include <asm/fpumacro.h>
 #include <asm/visasm.h>
 #include <asm/compat_signal.h>
+#include <asm/switch_to.h>
 
 #include "sigutil.h"
-
-#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
 
 /* This magic should be in g_upper[0] for all upper parts
  * to be valid.
@@ -214,8 +213,9 @@ void do_sigreturn32(struct pt_regs *regs)
 	    (((unsigned long) sf) & 3))
 		goto segv;
 
-	get_user(pc, &sf->info.si_regs.pc);
-	__get_user(npc, &sf->info.si_regs.npc);
+	if (get_user(pc, &sf->info.si_regs.pc) ||
+	    __get_user(npc, &sf->info.si_regs.npc))
+		goto segv;
 
 	if ((pc | npc) & 3)
 		goto segv;
@@ -272,11 +272,7 @@ void do_sigreturn32(struct pt_regs *regs)
 		case 2: set.sig[1] = seta[2] + (((long)seta[3]) << 32);
 		case 1: set.sig[0] = seta[0] + (((long)seta[1]) << 32);
 	}
-	sigdelsetmask(&set, ~_BLOCKABLE);
-	spin_lock_irq(&current->sighand->siglock);
-	current->blocked = set;
-	recalc_sigpending();
-	spin_unlock_irq(&current->sighand->siglock);
+	set_current_blocked(&set);
 	return;
 
 segv:
@@ -307,8 +303,9 @@ asmlinkage void do_rt_sigreturn32(struct pt_regs *regs)
 	    (((unsigned long) sf) & 3))
 		goto segv;
 
-	get_user(pc, &sf->regs.pc);
-	__get_user(npc, &sf->regs.npc);
+	if (get_user(pc, &sf->regs.pc) || 
+	    __get_user(npc, &sf->regs.npc))
+		goto segv;
 
 	if ((pc | npc) & 3)
 		goto segv;
@@ -376,11 +373,7 @@ asmlinkage void do_rt_sigreturn32(struct pt_regs *regs)
 		case 2: set.sig[1] = seta.sig[2] + (((long)seta.sig[3]) << 32);
 		case 1: set.sig[0] = seta.sig[0] + (((long)seta.sig[1]) << 32);
 	}
-	sigdelsetmask(&set, ~_BLOCKABLE);
-	spin_lock_irq(&current->sighand->siglock);
-	current->blocked = set;
-	recalc_sigpending();
-	spin_unlock_irq(&current->sighand->siglock);
+	set_current_blocked(&set);
 	return;
 segv:
 	force_sig(SIGSEGV, current);
@@ -583,7 +576,7 @@ static int setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
 			err |= __put_user(rp->ins[i], &sf->ss.ins[i]);
 		err |= __put_user(rp->ins[6], &sf->ss.fp);
 		err |= __put_user(rp->ins[7], &sf->ss.callers_pc);
-	}
+	}	
 	if (err)
 		goto sigsegv;
 
@@ -778,7 +771,7 @@ sigsegv:
 	return -EFAULT;
 }
 
-static inline int handle_signal32(unsigned long signr, struct k_sigaction *ka,
+static inline void handle_signal32(unsigned long signr, struct k_sigaction *ka,
 				  siginfo_t *info,
 				  sigset_t *oldset, struct pt_regs *regs)
 {
@@ -790,18 +783,9 @@ static inline int handle_signal32(unsigned long signr, struct k_sigaction *ka,
 		err = setup_frame32(ka, regs, signr, oldset);
 
 	if (err)
-		return err;
+		return;
 
-	spin_lock_irq(&current->sighand->siglock);
-	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
-	if (!(ka->sa.sa_flags & SA_NOMASK))
-		sigaddset(&current->blocked,signr);
-	recalc_sigpending();
-	spin_unlock_irq(&current->sighand->siglock);
-
-	tracehook_signal_handler(signr, info, ka, regs, 0);
-
-	return 0;
+	signal_delivered(signr, info, ka, regs, 0);
 }
 
 static inline void syscall_restart32(unsigned long orig_i0, struct pt_regs *regs,
@@ -850,14 +834,7 @@ void do_signal32(sigset_t *oldset, struct pt_regs * regs)
 	if (signr > 0) {
 		if (restart_syscall)
 			syscall_restart32(orig_i0, regs, &ka.sa);
-		if (handle_signal32(signr, &ka, &info, oldset, regs) == 0) {
-			/* A signal was successfully delivered; the saved
-			 * sigmask will have been stored in the signal frame,
-			 * and will be restored by sigreturn, so we can simply
-			 * clear the TS_RESTORE_SIGMASK flag.
-			 */
-			current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
-		}
+		handle_signal32(signr, &ka, &info, oldset, regs);
 		return;
 	}
 	if (restart_syscall &&
@@ -881,10 +858,7 @@ void do_signal32(sigset_t *oldset, struct pt_regs * regs)
 	/* If there's no signal to deliver, we just put the saved sigmask
 	 * back
 	 */
-	if (current_thread_info()->status & TS_RESTORE_SIGMASK) {
-		current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
-		sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
-	}
+	restore_saved_sigmask();
 }
 
 struct sigstack32 {

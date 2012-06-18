@@ -22,7 +22,6 @@
  *  Naturally it's not a 1:1 relation, but there are similarities.
  */
 #include <linux/kernel_stat.h>
-#include <linux/module.h>
 #include <linux/signal.h>
 #include <linux/ioport.h>
 #include <linux/interrupt.h>
@@ -35,14 +34,11 @@
 #include <linux/list.h>
 #include <linux/kallsyms.h>
 #include <linux/proc_fs.h>
-#include <linux/ftrace.h>
 
-#include <asm/system.h>
+#include <asm/exception.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/irq.h>
 #include <asm/mach/time.h>
-
-#include <asm/perftypes.h>
 
 /*
  * No architecture-specific irq_finish function defined in arm/arch/irqs.h.
@@ -61,51 +57,9 @@ int arch_show_interrupts(struct seq_file *p, int prec)
 #ifdef CONFIG_SMP
 	show_ipi_list(p, prec);
 #endif
-#ifdef CONFIG_LOCAL_TIMERS
-	show_local_irqs(p, prec);
-#endif
 	seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
 	return 0;
 }
-
-#ifdef CONFIG_ARCH_MSM8X60_LTE
-unsigned int previous_irqs[NR_IRQS+1] = {0};
-void htc_show_interrupt(int i)
-{
-	struct irqaction *action;
-	unsigned long flags;
-	if (i < NR_IRQS) {
-		raw_spin_lock_irqsave(&irq_desc[i].lock, flags);
-		action = irq_desc[i].action;
-		if (!action)
-			goto unlock;
-		if (!(kstat_irqs_cpu(i, 0)) || previous_irqs[i] == (kstat_irqs_cpu(i, 0)))
-			goto unlock;
-		printk("%3d:", i);
-		printk("%6u\t", kstat_irqs_cpu(i, 0)-previous_irqs[i]);
-		printk("%s", action->name);
-		for (action = action->next; action; action = action->next)
-			printk(KERN_INFO ", %s", action->name);
-		printk("\n");
-		previous_irqs[i] = kstat_irqs_cpu(i, 0);
-unlock:
-		raw_spin_unlock_irqrestore(&irq_desc[i].lock, flags);
-	} else if (i == NR_IRQS) {
-		if (previous_irqs[NR_IRQS] == irq_err_count)
-			return;
-		printk("Err: %lud\n", irq_err_count-previous_irqs[NR_IRQS]);
-		previous_irqs[NR_IRQS] = irq_err_count;
-	}
-}
-
-void htc_show_interrupts(void)
-{
-	int i = 0;
-	for (i = 0; i <= NR_IRQS; i++)
-		htc_show_interrupt(i);
-}
-#endif
-
 
 /*
  * handle_IRQ handles all hardware IRQ's.  Decoded IRQs should
@@ -117,7 +71,6 @@ void handle_IRQ(unsigned int irq, struct pt_regs *regs)
 {
 	struct pt_regs *old_regs = set_irq_regs(regs);
 
-	perf_mon_interrupt_in();
 	irq_enter();
 
 	/*
@@ -137,7 +90,6 @@ void handle_IRQ(unsigned int irq, struct pt_regs *regs)
 
 	irq_exit();
 	set_irq_regs(old_regs);
-	perf_mon_interrupt_out();
 }
 
 /*
@@ -203,10 +155,10 @@ static bool migrate_one_irq(struct irq_desc *desc)
 	}
 
 	c = irq_data_get_irq_chip(d);
-	if (c->irq_set_affinity)
-		c->irq_set_affinity(d, affinity, true);
-	else
+	if (!c->irq_set_affinity)
 		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
+	else if (c->irq_set_affinity(d, affinity, true) == IRQ_SET_MASK_OK && ret)
+		cpumask_copy(d->affinity, affinity);
 
 	return ret;
 }
@@ -228,10 +180,7 @@ void migrate_irqs(void)
 	local_irq_save(flags);
 
 	for_each_irq_desc(i, desc) {
-		bool affinity_broken = false;
-
-		if (!desc)
-			continue;
+		bool affinity_broken;
 
 		raw_spin_lock(&desc->lock);
 		affinity_broken = migrate_one_irq(desc);

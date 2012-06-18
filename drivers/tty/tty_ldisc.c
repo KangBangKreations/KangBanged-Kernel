@@ -1,19 +1,11 @@
 #include <linux/types.h>
-#include <linux/major.h>
 #include <linux/errno.h>
-#include <linux/signal.h>
-#include <linux/fcntl.h>
+#include <linux/kmod.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/tty.h>
 #include <linux/tty_driver.h>
-#include <linux/tty_flip.h>
-#include <linux/devpts_fs.h>
 #include <linux/file.h>
-#include <linux/console.h>
-#include <linux/timer.h>
-#include <linux/ctype.h>
-#include <linux/kd.h>
 #include <linux/mm.h>
 #include <linux/string.h>
 #include <linux/slab.h>
@@ -24,18 +16,8 @@
 #include <linux/device.h>
 #include <linux/wait.h>
 #include <linux/bitops.h>
-#include <linux/delay.h>
 #include <linux/seq_file.h>
-
 #include <linux/uaccess.h>
-#include <asm/system.h>
-
-#include <linux/kbd_kern.h>
-#include <linux/vt_kern.h>
-#include <linux/selection.h>
-
-#include <linux/kmod.h>
-#include <linux/nsproxy.h>
 #include <linux/ratelimit.h>
 
 /*
@@ -46,7 +28,6 @@
 
 static DEFINE_SPINLOCK(tty_ldisc_lock);
 static DECLARE_WAIT_QUEUE_HEAD(tty_ldisc_wait);
-static DECLARE_WAIT_QUEUE_HEAD(tty_ldisc_idle);
 /* Line disc dispatch table */
 static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
 
@@ -83,7 +64,7 @@ static void put_ldisc(struct tty_ldisc *ld)
 		return;
 	}
 	local_irq_restore(flags);
-	wake_up(&tty_ldisc_idle);
+	wake_up(&ld->wq_idle);
 }
 
 /**
@@ -218,6 +199,8 @@ static struct tty_ldisc *tty_ldisc_get(int disc)
 
 	ld->ops = ldops;
 	atomic_set(&ld->users, 1);
+	init_waitqueue_head(&ld->wq_idle);
+
 	return ld;
 }
 
@@ -451,7 +434,6 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
 	if (ld->ops->open) {
 		int ret;
                 /* BTM here locks versus a hangup event */
-		WARN_ON(!tty_locked());
 		ret = ld->ops->open(tty);
 		if (ret)
 			clear_bit(TTY_LDISC_OPEN, &tty->flags);
@@ -557,10 +539,8 @@ static void tty_ldisc_flush_works(struct tty_struct *tty)
 static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
 {
 	long ret;
-	ret = wait_event_timeout(tty_ldisc_idle,
+	ret = wait_event_timeout(tty->ldisc->wq_idle,
 			atomic_read(&tty->ldisc->users) == 1, timeout);
-	if (ret < 0)
-		return ret;
 	return ret > 0 ? 0 : -EBUSY;
 }
 
@@ -666,12 +646,6 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
 
 	mutex_unlock(&tty->ldisc_mutex);
 
-#if defined(CONFIG_MSM_SMD0_WQ)
-	if (!strcmp(tty->name, "smd0"))
-		flush_workqueue(tty_wq);
-	else
-#endif
-
 	tty_ldisc_flush_works(tty);
 
 	retval = tty_ldisc_wait_idle(tty, 5 * HZ);
@@ -729,68 +703,10 @@ enable:
 
 	/* Restart the work queue in case no characters kick it off. Safe if
 	   already running */
-	if (work) {
-/*+++ SSD_RIL*/
-/* Due to "work" type changed as below, change "queue function" to schedule_work.
-[.35 kernel] include/linux/tty.h
-struct tty_bufhead {
-struct delayed_work work;
-spinlock_t lock;
-struct tty_buffer *head;
-struct tty_buffer *tail;
-struct tty_buffer *free;
-int memory_used;
-};
-
-[kernel 3.0] include/linux/tty.h
-struct tty_bufhead {
-struct work_struct work;
-spinlock_t lock;
-struct tty_buffer *head;
-struct tty_buffer *tail;
-struct tty_buffer *free;
-int memory_used;
-};
-
-int queue_delayed_work(struct workqueue_struct *wq,
-struct delayed_work *dwork, unsigned long delay)
-{
-	if (delay == 0)
-		return queue_work(wq, &dwork->work);
-
-	return queue_delayed_work_on(-1, wq, dwork, delay);
-}
-
-int queue_work(struct workqueue_struct *wq, struct work_struct *work)
-{
-	int ret;
-
-	ret = queue_work_on(get_cpu(), wq, work);
-	put_cpu();
-
-	return ret;
-}
-*/
-/*--- SSD_RIL*/
-
-#if defined(CONFIG_MSM_SMD0_WQ)
-	if (!strcmp(tty->name, "smd0"))
-/*		queue_delayed_work(tty_wq, &tty->buf.work, 0);*/
-		queue_work(tty_wq, &tty->buf.work);
-	else
-#endif
+	if (work)
 		schedule_work(&tty->buf.work);
-	}
-
-	if (o_work) {
-#if defined(CONFIG_MSM_SMD0_WQ)
-		if (!strcmp(o_tty->name, "smd0"))
-/*			queue_delayed_work(tty_wq, &o_tty->buf.work, 0);*/
-			queue_work(tty_wq, &tty->buf.work);
-		else
-#endif
+	if (o_work)
 		schedule_work(&o_tty->buf.work);
-	}
 	mutex_unlock(&tty->ldisc_mutex);
 	tty_unlock();
 	return retval;
@@ -998,11 +914,6 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
 
 	tty_unlock();
 	tty_ldisc_halt(tty);
-#if defined(CONFIG_MSM_SMD0_WQ)
-	if (!strcmp(tty->name, "smd0"))
-		flush_workqueue(tty_wq);
-	else
-#endif
 	tty_ldisc_flush_works(tty);
 	tty_lock();
 

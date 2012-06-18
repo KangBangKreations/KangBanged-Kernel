@@ -7,7 +7,7 @@
  * Arbitrary resource management.
  */
 
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/errno.h>
 #include <linux/ioport.h>
 #include <linux/init.h>
@@ -262,24 +262,6 @@ int request_resource(struct resource *root, struct resource *new)
 EXPORT_SYMBOL(request_resource);
 
 /**
- * locate_resource - locate an already reserved I/O or memory resource
- * @root: root resource descriptor
- * @search: resource descriptor to be located
- *
- * Returns pointer to desired resource or NULL if not found.
- */
-struct resource *locate_resource(struct resource *root, struct resource *search)
-{
-	struct resource *found;
-
-	write_lock(&resource_lock);
-	found = __request_resource(root, search);
-	write_unlock(&resource_lock);
-	return found;
-}
-EXPORT_SYMBOL(locate_resource);
-
-/**
  * release_resource - release a previously reserved resource
  * @old: resource pointer
  */
@@ -437,6 +419,9 @@ static int __find_resource(struct resource *root, struct resource *old,
 		else
 			tmp.end = root->end;
 
+		if (tmp.end < tmp.start)
+			goto next;
+
 		resource_clip(&tmp, constraint->min, constraint->max);
 		arch_remove_reservations(&tmp);
 
@@ -454,8 +439,10 @@ static int __find_resource(struct resource *root, struct resource *old,
 				return 0;
 			}
 		}
-		if (!this)
+
+next:		if (!this || this->end == root->end)
 			break;
+
 		if (this != old)
 			tmp.start = this->end + 1;
 		this = this->sibling;
@@ -528,8 +515,8 @@ out:
  * @root: root resource descriptor
  * @new: resource descriptor desired by caller
  * @size: requested resource region size
- * @min: minimum size to allocate
- * @max: maximum size to allocate
+ * @min: minimum boundary to allocate
+ * @max: maximum boundary to allocate
  * @align: alignment requested, in bytes
  * @alignf: alignment function, optional, called if not NULL
  * @alignf_data: arbitrary data to pass to the @alignf function
@@ -570,6 +557,27 @@ int allocate_resource(struct resource *root, struct resource *new,
 }
 
 EXPORT_SYMBOL(allocate_resource);
+
+/**
+ * lookup_resource - find an existing resource by a resource start address
+ * @root: root resource descriptor
+ * @start: resource start address
+ *
+ * Returns a pointer to the resource if found, NULL otherwise
+ */
+struct resource *lookup_resource(struct resource *root, resource_size_t start)
+{
+	struct resource *res;
+
+	read_lock(&resource_lock);
+	for (res = root->child; res; res = res->sibling) {
+		if (res->start == start)
+			break;
+	}
+	read_unlock(&resource_lock);
+
+	return res;
+}
 
 /*
  * Insert a resource into the resource tree. If successful, return NULL,
@@ -741,6 +749,7 @@ int adjust_resource(struct resource *res, resource_size_t start, resource_size_t
 	write_unlock(&resource_lock);
 	return result;
 }
+EXPORT_SYMBOL(adjust_resource);
 
 static void __init __reserve_region_with_split(struct resource *root,
 		resource_size_t start, resource_size_t end,
@@ -783,8 +792,6 @@ void __init reserve_region_with_split(struct resource *root,
 	__reserve_region_with_split(root, start, end, name);
 	write_unlock(&resource_lock);
 }
-
-EXPORT_SYMBOL(adjust_resource);
 
 /**
  * resource_alignment - calculate resource's alignment

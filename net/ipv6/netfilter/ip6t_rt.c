@@ -42,14 +42,14 @@ static bool rt_mt6(const struct sk_buff *skb, struct xt_action_param *par)
 	const struct ipv6_rt_hdr *rh;
 	const struct ip6t_rt *rtinfo = par->matchinfo;
 	unsigned int temp;
-	unsigned int ptr;
+	unsigned int ptr = 0;
 	unsigned int hdrlen = 0;
 	bool ret = false;
 	struct in6_addr _addr;
 	const struct in6_addr *ap;
 	int err;
 
-	err = ipv6_find_hdr(skb, &ptr, NEXTHDR_ROUTING, NULL);
+	err = ipv6_find_hdr(skb, &ptr, NEXTHDR_ROUTING, NULL, NULL);
 	if (err < 0) {
 		if (err != -ENOENT)
 			par->hotdrop = true;
@@ -111,10 +111,7 @@ static bool rt_mt6(const struct sk_buff *skb, struct xt_action_param *par)
 						       reserved),
 					sizeof(_reserved),
 					&_reserved);
-		if (rp == NULL) {
-			pr_debug("Null Pointer will be dereferenced: rp\n");
-			return false;
-		}
+
 		ret = (*rp == 0);
 	}
 
@@ -141,10 +138,7 @@ static bool rt_mt6(const struct sk_buff *skb, struct xt_action_param *par)
 							&_addr);
 
 				BUG_ON(ap == NULL);
-				if (i >= IP6T_RT_HOPS) {
-					pr_debug("buffer overflow on addrs[i]: i > IP6T_RT_HOPS\n");
-					return false;
-				}
+
 				if (ipv6_addr_equal(ap, &rtinfo->addrs[i])) {
 					pr_debug("i=%d temp=%d;\n", i, temp);
 					i++;

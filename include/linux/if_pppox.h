@@ -20,15 +20,14 @@
 #include <linux/types.h>
 #include <asm/byteorder.h>
 
-#ifdef  __KERNEL__
+#include <linux/socket.h>
 #include <linux/if_ether.h>
+#ifdef  __KERNEL__
 #include <linux/if.h>
 #include <linux/netdevice.h>
 #include <linux/ppp_channel.h>
 #endif /* __KERNEL__ */
 #include <linux/if_pppol2tp.h>
-#include <linux/if_pppolac.h>
-#include <linux/if_pppopns.h>
 
 /* For user-space programs to pick up these definitions
  * which they wouldn't get otherwise without defining __KERNEL__
@@ -62,18 +61,16 @@ struct pptp_addr {
 #define PX_PROTO_OE    0 /* Currently just PPPoE */
 #define PX_PROTO_OL2TP 1 /* Now L2TP also */
 #define PX_PROTO_PPTP  2
-#define PX_PROTO_OLAC  3
-#define PX_PROTO_OPNS  4
-#define PX_MAX_PROTO   5
+#define PX_MAX_PROTO   3
 
 struct sockaddr_pppox {
-	sa_family_t     sa_family;            /* address family, AF_PPPOX */
+	__kernel_sa_family_t sa_family;       /* address family, AF_PPPOX */
 	unsigned int    sa_protocol;          /* protocol identifier */
 	union {
 		struct pppoe_addr  pppoe;
 		struct pptp_addr   pptp;
 	} sa_addr;
-} __attribute__((packed));
+} __packed;
 
 /* The use of the above union isn't viable because the size of this
  * struct must stay fixed over time -- applications use sizeof(struct
@@ -81,19 +78,31 @@ struct sockaddr_pppox {
  * type instead.
  */
 struct sockaddr_pppol2tp {
-	sa_family_t     sa_family;      /* address family, AF_PPPOX */
+	__kernel_sa_family_t sa_family; /* address family, AF_PPPOX */
 	unsigned int    sa_protocol;    /* protocol identifier */
 	struct pppol2tp_addr pppol2tp;
-} __attribute__((packed));
+} __packed;
+
+struct sockaddr_pppol2tpin6 {
+	__kernel_sa_family_t sa_family; /* address family, AF_PPPOX */
+	unsigned int    sa_protocol;    /* protocol identifier */
+	struct pppol2tpin6_addr pppol2tp;
+} __packed;
 
 /* The L2TPv3 protocol changes tunnel and session ids from 16 to 32
  * bits. So we need a different sockaddr structure.
  */
 struct sockaddr_pppol2tpv3 {
-	sa_family_t     sa_family;      /* address family, AF_PPPOX */
+	__kernel_sa_family_t sa_family; /* address family, AF_PPPOX */
 	unsigned int    sa_protocol;    /* protocol identifier */
 	struct pppol2tpv3_addr pppol2tp;
-} __attribute__((packed));
+} __packed;
+
+struct sockaddr_pppol2tpv3in6 {
+	__kernel_sa_family_t sa_family; /* address family, AF_PPPOX */
+	unsigned int    sa_protocol;    /* protocol identifier */
+	struct pppol2tpv3in6_addr pppol2tp;
+} __packed;
 
 /*********************************************************************
  *
@@ -143,7 +152,7 @@ struct pppoe_hdr {
 	__be16 sid;
 	__be16 length;
 	struct pppoe_tag tag[0];
-} __attribute__((packed));
+} __packed;
 
 /* Length of entire PPPoE + PPP header */
 #define PPPOE_SES_HLEN	8
@@ -171,25 +180,6 @@ struct pptp_opt {
 	u32 seq_sent, seq_recv;
 	int ppp_flags;
 };
-
-struct pppolac_opt {
-	__u32		local;
-	__u32		remote;
-	__u32		recv_sequence;
-	__u32		xmit_sequence;
-	atomic_t	sequencing;
-	int		(*backlog_rcv)(struct sock *sk_udp, struct sk_buff *skb);
-};
-
-struct pppopns_opt {
-	__u16		local;
-	__u16		remote;
-	__u32		recv_sequence;
-	__u32		xmit_sequence;
-	void		(*data_ready)(struct sock *sk_raw, int length);
-	int		(*backlog_rcv)(struct sock *sk_raw, struct sk_buff *skb);
-};
-
 #include <net/sock.h>
 
 struct pppox_sock {
@@ -200,8 +190,6 @@ struct pppox_sock {
 	union {
 		struct pppoe_opt pppoe;
 		struct pptp_opt  pptp;
-		struct pppolac_opt lac;
-		struct pppopns_opt pns;
 	} proto;
 	__be16			num;
 };

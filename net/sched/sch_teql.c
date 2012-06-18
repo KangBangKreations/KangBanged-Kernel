@@ -88,9 +88,7 @@ teql_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 		return NET_XMIT_SUCCESS;
 	}
 
-	kfree_skb(skb);
-	sch->qstats.drops++;
-	return NET_XMIT_DROP;
+	return qdisc_drop(skb, sch);
 }
 
 static struct sk_buff *
@@ -277,7 +275,7 @@ static inline int teql_resolve(struct sk_buff *skb,
 		return 0;
 
 	rcu_read_lock();
-	mn = dst_get_neighbour(dst);
+	mn = dst_get_neighbour_noref(dst);
 	res = mn ? __teql_resolve(skb, skb_res, dev, txq, mn) : 0;
 	rcu_read_unlock();
 
@@ -310,7 +308,7 @@ restart:
 
 		if (slave_txq->qdisc_sleeping != q)
 			continue;
-		if (__netif_subqueue_stopped(slave, subq) ||
+		if (netif_xmit_stopped(netdev_get_tx_queue(slave, subq)) ||
 		    !netif_running(slave)) {
 			busy = 1;
 			continue;
@@ -321,7 +319,7 @@ restart:
 			if (__netif_tx_trylock(slave_txq)) {
 				unsigned int length = qdisc_pkt_len(skb);
 
-				if (!netif_tx_queue_frozen_or_stopped(slave_txq) &&
+				if (!netif_xmit_frozen_or_stopped(slave_txq) &&
 				    slave_ops->ndo_start_xmit(skb, slave) == NETDEV_TX_OK) {
 					txq_trans_update(slave_txq);
 					__netif_tx_unlock(slave_txq);
@@ -333,7 +331,7 @@ restart:
 				}
 				__netif_tx_unlock(slave_txq);
 			}
-			if (netif_queue_stopped(dev))
+			if (netif_xmit_stopped(netdev_get_tx_queue(dev, 0)))
 				busy = 1;
 			break;
 		case 1:

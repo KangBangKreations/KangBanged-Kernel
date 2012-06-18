@@ -1,7 +1,7 @@
 /*
  * Just-In-Time compiler for BPF filters on 32bit ARM
  *
- * Copyright (c) 2011 Mircea Gherzan <mgherzan@xxxxxxxxx>
+ * Copyright (c) 2011 Mircea Gherzan <mgherzan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -10,6 +10,7 @@
 
 #include <linux/bitops.h>
 #include <linux/compiler.h>
+#include <linux/errno.h>
 #include <linux/filter.h>
 #include <linux/moduleloader.h>
 #include <linux/netdevice.h>
@@ -68,8 +69,7 @@ struct jit_ctx {
 #endif
 };
 
-//changed to be enabled by default - show-p1984
-int bpf_jit_enable __read_mostly = 1;
+int bpf_jit_enable __read_mostly;
 
 static u64 jit_get_skb_b(struct sk_buff *skb, unsigned offset)
 {
@@ -499,8 +499,8 @@ static int build_body(struct jit_ctx *ctx)
 			load_order = 0;
 load:
 			/* the interpreter will deal with the negative K */
-			if (k < 0)
-				return -1;
+			if ((int)k < 0)
+				return -ENOTSUPP;
 			emit_mov_i(r_off, k, ctx);
 load_common:
 			ctx->seen |= SEEN_DATA | SEEN_CALL;
@@ -585,6 +585,9 @@ load_ind:
 			/* r_off is r1 */
 			emit_mov_i(ARM_R3, (u32)jit_get_skb_b, ctx);
 			emit_blx_r(ARM_R3, ctx);
+			/* check the return value of skb_copy_bits */
+			emit(ARM_CMP_I(ARM_R1, 0), ctx);
+			emit_err_ret(ARM_COND_NE, ctx);
 
 			emit(ARM_AND_I(r_X, ARM_R0, 0x00f), ctx);
 			emit(ARM_LSL_I(r_X, r_X, 2), ctx);
@@ -910,4 +913,3 @@ void bpf_jit_free(struct sk_filter *fp)
 		schedule_work(work);
 	}
 }
-
