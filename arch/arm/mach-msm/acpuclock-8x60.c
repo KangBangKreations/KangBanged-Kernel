@@ -217,7 +217,7 @@ static struct clkctl_l2_speed l2_freq_tbl_v2[] = {
 #define L2(x) (&l2_freq_tbl_v2[(x)])
 /* SCPLL frequencies = 2 * 27 MHz * L_VAL */
 static struct clkctl_acpu_speed acpu_freq_tbl_oc[] = {
-  { {1, 1},  192000,  ACPU_PLL_8, 3, 1, 0, 0,    L2(1),   800000, 0x03006000},
+  { {1, 1},  192000,  ACPU_PLL_8, 3, 1, 0, 0,    L2(1),   825000, 0x03006000},
   /* MAX_AXI row is used to source CPU cores and L2 from the AFAB clock. */
   { {0, 0},  MAX_AXI, ACPU_AFAB,  1, 0, 0, 0,    L2(0),   825000, 0x03006000},
   { {1, 1},  384000,  ACPU_PLL_8, 3, 0, 0, 0,    L2(1),   825000, 0x03006000},
@@ -918,7 +918,7 @@ static int __init acpuclk_8x60_init(struct acpuclk_soc_data *soc_data)
 
 	/* Improve boot time by ramping up CPUs immediately. */
 	for_each_online_cpu(cpu)
-		acpuclk_8x60_set_rate(cpu, 1566000, SETRATE_INIT);
+		acpuclk_8x60_set_rate(cpu, 1674000, SETRATE_INIT);
 
 	acpuclk_register(&acpuclk_8x60_data);
 	cpufreq_table_init();
