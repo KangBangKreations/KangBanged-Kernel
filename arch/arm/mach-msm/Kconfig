@@ -918,6 +918,13 @@ config MSM_KGSL_2D_GPUOC
 	help
 	  Increase MSM GPU 2d Frequencies.
 
+config BOOT_CLOCK_OC
+	bool "Overclock Boot Clock"
+	default n
+	depends on MSM_KGSL_BUSOC
+	help
+	  Improve boot time by setting boot rate of 1.782GHz.
+
 config MSM_AMSS_VERSION
 	int
 	default 6210 if MSM_AMSS_VERSION_6210

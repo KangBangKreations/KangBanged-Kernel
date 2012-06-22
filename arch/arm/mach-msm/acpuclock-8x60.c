@@ -918,7 +918,11 @@ static int __init acpuclk_8x60_init(struct acpuclk_soc_data *soc_data)
 
 	/* Improve boot time by ramping up CPUs immediately. */
 	for_each_online_cpu(cpu)
+#ifdef CONFIG_BOOT_CLOCK_OC
 		acpuclk_8x60_set_rate(cpu, 1782000, SETRATE_INIT);
+#else
+		acpuclk_8x60_set_rate(cpu, 1242000, SETRATE_INIT);
+#endif
 
 	acpuclk_register(&acpuclk_8x60_data);
 	cpufreq_table_init();
