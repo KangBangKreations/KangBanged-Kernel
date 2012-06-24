@@ -1565,6 +1565,8 @@ config CPU_VOLTAGE_TABLE
 	bool "Enable CPU Voltage Table via sysfs for adjustements"
 	default n
 
+if CPU_FREQ_MSM
+
 config CMDLINE_OPTIONS
 	bool "Enable cmdline khz/gov/maxscroff command parsing"
 	default n
