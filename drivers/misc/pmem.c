@@ -2473,7 +2473,7 @@ static long pmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return pmem_remap(&region, file, PMEM_UNMAP);
 			break;
 		}
-#ifdef CONFIG_HTC_DEVICE
+#ifdef CONFIG_PMEM_CACHE_FLUSH
 	case PMEM_CACHE_FLUSH:
 		{
 			struct pmem_region region;
