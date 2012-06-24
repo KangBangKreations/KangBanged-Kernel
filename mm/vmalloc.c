@@ -1395,7 +1395,7 @@ struct vm_struct *remove_vm_area(const void *addr)
 
 	va = find_vmap_area((unsigned long)addr);
 	if (va && va->flags & VM_VM_AREA) {
-		struct vm_struct *vm = va->private;
+		struct vm_struct *vm = va->vm;
 		struct vm_struct *tmp, **p;
 		/*
 		 * remove from list and disallow access to this vm_struct
