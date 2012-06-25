@@ -2473,18 +2473,6 @@ static long pmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return pmem_remap(&region, file, PMEM_UNMAP);
 			break;
 		}
-#ifdef CONFIG_PMEM_CACHE_FLUSH
-	case PMEM_CACHE_FLUSH:
-		{
-			struct pmem_region region;
-			DLOG("flush\n");
-			if (copy_from_user(&region, (void __user *)arg,
-						sizeof(struct pmem_region)))
-				return -EFAULT;
-			flush_pmem_file(file, region.offset, region.len);
-			break;
-		}
-#endif
 	case PMEM_GET_SIZE:
 		{
 			struct pmem_region region;
@@ -2599,6 +2587,7 @@ static long pmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		DLOG("connect\n");
 		return pmem_connect(arg, file);
 
+#ifdef CONFIG_PMEM_CACHE_FLUSH
 	case PMEM_CACHE_FLUSH:
 		{
 			struct pmem_region region;
@@ -2609,6 +2598,7 @@ static long pmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			flush_pmem_file(file, region.offset, region.len);
 			break;
 		}
+#endif
 
 	case PMEM_CLEAN_INV_CACHES:
 	case PMEM_CLEAN_CACHES:
