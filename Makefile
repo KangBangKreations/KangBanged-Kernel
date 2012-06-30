@@ -195,7 +195,7 @@ SUBARCH := arm
 SUBARCH := arm
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= /media/d4a52625-61cd-4acc-bf04-104ce27eafa7/source/codefire/prebuilt/linux-x86/toolchains/arm-eabi-4.6.3/bin/arm-linux-androideabi-
+CROSS_COMPILE	?= /media/d4a52625-61cd-4acc-bf04-104ce27eafa7/source/codefire/prebuilt/linux-x86/toolchain/arm-eabi-4.6.3/bin/arm-linux-androideabi-
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 
 # Architecture as present in compile.h
