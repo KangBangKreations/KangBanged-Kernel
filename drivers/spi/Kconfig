@@ -133,12 +133,6 @@ config SPI_COLDFIRE_QSPI
 	  This driver can also be built as a module.  If so, the module
 	  will be called coldfire_qspi.
 
-config COMPILER_SPI_SIZE
-	boolean "SPI -Os Compile"
-	default n
-	help
-	  Compile SPI with -Os to override CFlag.
-
 config SPI_DAVINCI
 	tristate "Texas Instruments DaVinci/DA8x/OMAP-L/AM1x SoC SPI controller"
 	depends on SPI_MASTER && ARCH_DAVINCI
