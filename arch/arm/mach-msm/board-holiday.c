@@ -4521,12 +4521,12 @@ static struct pm8xxx_pwrkey_platform_data pm8058_pwrkey_pdata = {
 static struct pmic8058_led pmic8058_flash_leds[] = {
 	[0] = {
 		.name		= "camera:flash0",
-		.max_brightness = 15,
+		.max_brightness = 20,
 		.id		= PMIC8058_ID_FLASH_LED_0,
 	},
 	[1] = {
 		.name		= "camera:flash1",
-		.max_brightness = 15,
+		.max_brightness = 20,
 		.id		= PMIC8058_ID_FLASH_LED_1,
 	},
 };
