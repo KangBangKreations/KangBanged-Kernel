@@ -2537,7 +2537,7 @@ CONFIG_NLS_ISO8859_1=y
 # CONFIG_NLS_UTF8 is not set
 
 #
-# Custom OverClocking Configs
+# Custom OverClocking Configs by Synergy(e)
 #
 CONFIG_BOOT_CLOCK_OC=y
 CONFIG_MSM_BUS_HIGHOC=y
