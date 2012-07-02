@@ -925,6 +925,12 @@ config BOOT_CLOCK_OC
 	help
 	  Improve boot time by setting boot rate of 1.782GHz.
 
+config BRIGHT_FLASHLED
+	bool "Increase PM8058 LED max brightness"
+	default n
+	help
+	  Increase PM8058 FLASH_LED_0 and FLASH_LED_1 to 20 from 15
+
 config MSM_AMSS_VERSION
 	int
 	default 6210 if MSM_AMSS_VERSION_6210
