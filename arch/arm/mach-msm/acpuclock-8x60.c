@@ -222,6 +222,7 @@ static struct clkctl_l2_speed l2_freq_tbl_v2[] = {
 	[21] = {1512000,  1, 0x1C, 1225000, 1275000, 4},
 	[22] = {1566000,  1, 0x1D, 1225000, 1275000, 4},
 #endif
+#endif
 };
 
 #define L2(x) (&l2_freq_tbl_v2[(x)])
