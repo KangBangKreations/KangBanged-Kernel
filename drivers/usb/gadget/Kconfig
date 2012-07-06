@@ -57,6 +57,11 @@ config USB_GADGET_DEBUG
 	   trying to track down.  Never enable these messages for a
 	   production build.
 
+config USBG_OPTIMIZE_SIZE
+	bool "Optimize string library for size"
+	default n
+	help
+
 config USB_GADGET_DEBUG_FILES
 	boolean "Debugging information files (DEVELOPMENT)"
 	depends on PROC_FS
