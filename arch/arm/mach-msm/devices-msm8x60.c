@@ -935,22 +935,22 @@ static struct kgsl_device_platform_data kgsl_3d0_pdata = {
 	.pwrlevel = {
 #ifdef CONFIG_MSM_KGSL_3D_GPUOC
 		{
-			.gpu_freq = 300000000,
+			.gpu_freq = 320000000,
 			.bus_freq = 4,
 			.io_fraction = 0,
 		},
 		{
-			.gpu_freq = 266667000,
+			.gpu_freq = 300000000,
 			.bus_freq = 3,
 			.io_fraction = 33,
 		},
 		{
-			.gpu_freq = 228571000,
+			.gpu_freq = 266667000,
 			.bus_freq = 2,
 			.io_fraction = 100,
 		},
 		{
-			.gpu_freq = 200000000,
+			.gpu_freq = 228571000,
 			.bus_freq = 1,
 			.io_fraction = 100,
 		},
