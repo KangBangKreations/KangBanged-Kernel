@@ -898,6 +898,12 @@ config MSM_BUS_HIGHOC
 	help
 	  Shift entire 8x60 bus clocks up to 473MHz max
 
+config MSM_L2_MAXOC
+	bool "8x60 L2 max cache clock to 1620MHz"
+	default n
+	help
+	  Max L2 clock of 1620MHz
+
 config MSM_KGSL_BUSOC
 	bool "Overclock Bus KGSL Bus Frequencies"
 	default n
