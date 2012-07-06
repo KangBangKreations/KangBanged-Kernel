@@ -2537,13 +2537,21 @@ CONFIG_MSM_KGSL_2D_GPUOC=y
 CONFIG_BRIGHT_FLASHLED=y
 
 #
-# Custom Compiler Configuration Synergy(e)/mdeejay
+# Custom Compiler Configuration by mdeejay
 #
 # CONFIG_CC_OPTIMIZE_ALITTLE is not set
 # CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-# CONFIG_CC_OPTIMIZE_DEFAULT is not ste
-CONFIG_CC_OPTIMIZE_ALOT=y
+CONFIG_CC_OPTIMIZE_DEFAULT=y
+# CONFIG_CC_OPTIMIZE_ALOT is not set
+
+#
+# Custom Compiler Configuration by Synergy(e)
+#
+
+# CONFIG_CC_OPTIMIZE_ALITTLE is not set
 CONFIG_STRING_OPTIMIZE_SIZE=y
+CONFIG_USBCORE_OPTIMIZE_SIZE=y
+# CONFIG_COMPILER_BCMDHD_SIZE is not set
 # CONFIG_COMPILER_SPI_SIZE is not set
 # CONFIG_COMPILER_LIBRA_SIZE is not set
 # CONFIG_COMPILER_BCMDHD_SIZE is not set
