@@ -5,6 +5,11 @@
 config BINARY_PRINTF
 	def_bool n
 
+config STRING_OPTIMIZE_SIZE
+	bool "Optimize string library for size"
+	default n
+	help
+
 menu "Library routines"
 
 config RAID6_PQ
