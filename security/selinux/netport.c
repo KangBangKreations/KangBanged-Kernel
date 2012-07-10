@@ -234,7 +234,8 @@ static void sel_netport_flush(void)
 	spin_unlock_bh(&sel_netport_lock);
 }
 
-static int sel_netport_avc_callback(u32 event)
+static int sel_netport_avc_callback(u32 event, u32 ssid, u32 tsid,
+				    u16 class, u32 perms, u32 *retained)
 {
 	if (event == AVC_CALLBACK_RESET) {
 		sel_netport_flush();
@@ -256,7 +257,8 @@ static __init int sel_netport_init(void)
 		sel_netport_hash[iter].size = 0;
 	}
 
-	ret = avc_add_callback(sel_netport_avc_callback, AVC_CALLBACK_RESET);
+	ret = avc_add_callback(sel_netport_avc_callback, AVC_CALLBACK_RESET,
+			       SECSID_NULL, SECSID_NULL, SECCLASS_NULL, 0);
 	if (ret != 0)
 		panic("avc_add_callback() failed, error %d\n", ret);
 

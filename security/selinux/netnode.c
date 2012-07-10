@@ -220,7 +220,7 @@ static int sel_netnode_sid_slow(void *addr, u16 family, u32 *sid)
 	case PF_INET6:
 		ret = security_node_sid(PF_INET6,
 					addr, sizeof(struct in6_addr), sid);
-		new->nsec.addr.ipv6 = *(struct in6_addr *)addr;
+		ipv6_addr_copy(&new->nsec.addr.ipv6, addr);
 		break;
 	default:
 		BUG();
@@ -297,7 +297,8 @@ static void sel_netnode_flush(void)
 	spin_unlock_bh(&sel_netnode_lock);
 }
 
-static int sel_netnode_avc_callback(u32 event)
+static int sel_netnode_avc_callback(u32 event, u32 ssid, u32 tsid,
+				    u16 class, u32 perms, u32 *retained)
 {
 	if (event == AVC_CALLBACK_RESET) {
 		sel_netnode_flush();
@@ -319,7 +320,8 @@ static __init int sel_netnode_init(void)
 		sel_netnode_hash[iter].size = 0;
 	}
 
-	ret = avc_add_callback(sel_netnode_avc_callback, AVC_CALLBACK_RESET);
+	ret = avc_add_callback(sel_netnode_avc_callback, AVC_CALLBACK_RESET,
+			       SECSID_NULL, SECSID_NULL, SECCLASS_NULL, 0);
 	if (ret != 0)
 		panic("avc_add_callback() failed, error %d\n", ret);
 
