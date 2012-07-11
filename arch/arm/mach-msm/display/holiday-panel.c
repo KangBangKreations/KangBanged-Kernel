@@ -870,13 +870,13 @@ static void holiday_panel_power(int on)
 			goto fail;
 		}
 
-		ret = regulator_set_voltage(l19_2v85, 2850000, 2850000);
+		ret = regulator_set_voltage(l19_2v85, 2550000, 2550000);
 		if (ret) {
 			PR_DISP_ERR("%s: error setting l19_2v85 voltage\n", __func__);
 			goto fail;
 		}
 
-		ret = regulator_set_voltage(l20_1v8, 1800000, 1800000);
+		ret = regulator_set_voltage(l20_1v8, 1500000, 1500000);
 		if (ret) {
 			PR_DISP_ERR("%s: error setting l20_1v8 voltage\n", __func__);
 			goto fail;
