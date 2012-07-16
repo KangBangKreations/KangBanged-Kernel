@@ -507,7 +507,7 @@ static struct regulator_init_data saw_s0_init_data = {
 			.name = "8901_s0",
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.min_uV = 750000,
-			.max_uV = 1350000,
+			.max_uV = 1550000,
 		},
 		.consumer_supplies = vreg_consumers_8901_S0,
 		.num_consumer_supplies = ARRAY_SIZE(vreg_consumers_8901_S0),
@@ -518,7 +518,7 @@ static struct regulator_init_data saw_s1_init_data = {
 			.name = "8901_s1",
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.min_uV = 750000,
-			.max_uV = 1350000,
+			.max_uV = 1550000,
 		},
 		.consumer_supplies = vreg_consumers_8901_S1,
 		.num_consumer_supplies = ARRAY_SIZE(vreg_consumers_8901_S1),
@@ -1777,7 +1777,7 @@ static struct msm_camera_sensor_flash_src msm_flash_src = {
 
 static struct camera_flash_cfg msm_camera_sensor_flash_cfg = {
 	.low_temp_limit		= 5,
-	.low_cap_limit		= 15,
+	.low_cap_limit		= 5,
 };
 
 #ifdef CONFIG_S5K3H2YX
@@ -2198,6 +2198,7 @@ static void __init msm8x60_init_dsps(void)
 }
 #endif /* CONFIG_MSM_DSPS */
 
+#ifdef CONFIG_SHOOTER_PMEM
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MSM_FB_PRIM_BUF_SIZE (roundup((960 * 540 * 4), 4096) * 3) /* 4 bpp x 3 pages */
 #else
@@ -2242,6 +2243,63 @@ static void __init msm8x60_init_dsps(void)
 #define USER_SMI_SIZE			   	(MSM_SMI_SIZE - KERNEL_SMI_SIZE)
 #define MSM_PMEM_SMIPOOL_BASE	   		USER_SMI_BASE
 #define MSM_PMEM_SMIPOOL_SIZE	   		USER_SMI_SIZE
+#else //CONFIG_SHOOTER_PMEM
+#ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
+#define MSM_FB_PRIM_BUF_SIZE (960 * ALIGN(540, 32) * 4 * 3) /* 4 bpp x 3 pages */
+#else
+#define MSM_FB_PRIM_BUF_SIZE (960 * ALIGN(540, 32) * 4 * 2) /* 4 bpp x 2 pages */
+#endif
+
+#ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
+#define MSM_FB_EXT_BUF_SIZE  (1920 * 1080 * 2 * 1) /* 2 bpp x 1 page */
+#else
+#define MSM_FB_EXT_BUFT_SIZE    0
+#endif
+
+#ifdef CONFIG_FB_MSM_OVERLAY_WRITEBACK
+/* width x height x 3 bpp x 2 frame buffer */
+#define MSM_FB_WRITEBACK_SIZE roundup(960 * ALIGN(540, 32) * 3 * 2, 4096)
+#define MSM_FB_WRITEBACK_OFFSET 0
+#else
+#define MSM_FB_WRITEBACK_SIZE   0
+#define MSM_FB_WRITEBACK_OFFSET 0
+#endif
+
+/* Note: must be multiple of 4096 */
+#define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE + MSM_FB_EXT_BUF_SIZE, 4096)
+
+#define MSM_PMEM_SF_SIZE			0x1000000 /* 16 Mbytes */
+#define MSM_PMEM_ADSP_SIZE			0x2700000
+#define MSM_PMEM_ADSP2_SIZE			0x800000 /* 1152 * 1920 * 1.5 * 2 */
+#define MSM_PMEM_AUDIO_SIZE			0x239000
+#define MSM_PMEM_TZCOM_SIZE			0xC7000
+
+#define MSM_PMEM_SF_BASE			(0x40400000)
+#define MSM_PMEM_ADSP2_BASE			(0x80000000 - MSM_PMEM_ADSP2_SIZE)
+#define MSM_PMEM_ADSP_BASE			(MSM_PMEM_ADSP2_BASE - MSM_PMEM_ADSP_SIZE)
+#define MSM_PMEM_TZCOM_BASE			(MSM_PMEM_SF_BASE + MSM_PMEM_SF_SIZE)
+#define MSM_FB_WRITEBACK_BASE		(MSM_PMEM_TZCOM_BASE + MSM_PMEM_TZCOM_SIZE)
+#define MSM_FB_BASE					(MSM_FB_WRITEBACK_BASE + MSM_FB_WRITEBACK_SIZE)
+#define MSM_PMEM_AUDIO_BASE			(MSM_FB_BASE + MSM_FB_SIZE)
+
+#define MSM_SMI_BASE				0x38000000
+#define MSM_SMI_SIZE				0x4000000
+
+/* Kernel SMI PMEM Region for video core, used for Firmware */
+/* and encoder, decoder scratch buffers */
+/* Kernel SMI PMEM Region Should always precede the user space */
+/* SMI PMEM Region, as the video core will use offset address */
+/* from the Firmware base */
+#define KERNEL_SMI_BASE			 (MSM_SMI_BASE)
+#define KERNEL_SMI_SIZE			 0x400000
+
+/* User space SMI PMEM Region for video core*/
+/* used for encoder, decoder input & output buffers  */
+#define USER_SMI_BASE			   (KERNEL_SMI_BASE + KERNEL_SMI_SIZE)
+#define USER_SMI_SIZE			   (MSM_SMI_SIZE - KERNEL_SMI_SIZE)
+#define MSM_PMEM_SMIPOOL_BASE	   USER_SMI_BASE
+#define MSM_PMEM_SMIPOOL_SIZE	   USER_SMI_SIZE
+#endif //CONFIG_SHOOTER_PMEM
 
 static unsigned fb_size;
 static int __init fb_size_setup(char *p)
@@ -2323,12 +2381,6 @@ static struct android_pmem_platform_data android_pmem_audio_pdata = {
 	.allocator_type = PMEM_ALLOCATORTYPE_BITMAP,
 	.cached = 0,
 	.memory_type = MEMTYPE_EBI1,
-};
-
-static struct platform_device android_pmem_audio_device = {
-	.name = "android_pmem",
-	.id = 4,
-	.dev = { .platform_data = &android_pmem_audio_pdata },
 };
 
 static struct platform_device android_pmem_audio_device = {
@@ -3154,8 +3206,8 @@ static struct regulator_consumer_supply vreg_consumers_PM8901_S4_PC[] = {
 /* RPM early regulator constraints */
 static struct rpm_regulator_init_data rpm_regulator_early_init_data[] = {
 	/*	 ID       a_on pd ss min_uV   max_uV   init_ip    freq */
-	RPM_SMPS(PM8058_S0, 0, 1, 1,  500000, 1350000, SMPS_HMIN, 1p92),
-	RPM_SMPS(PM8058_S1, 0, 1, 1,  500000, 1350000, SMPS_HMIN, 1p92),
+	RPM_SMPS(PM8058_S0, 0, 1, 1,  500000, 1450000, SMPS_HMIN, 1p92),
+	RPM_SMPS(PM8058_S1, 0, 1, 1,  500000, 1450000, SMPS_HMIN, 1p92),
 };
 
 /* RPM regulator constraints */
@@ -4469,12 +4521,20 @@ static struct pm8xxx_pwrkey_platform_data pm8058_pwrkey_pdata = {
 static struct pmic8058_led pmic8058_flash_leds[] = {
 	[0] = {
 		.name		= "camera:flash0",
+#ifdef CONFIG_BRIGHT_FLASHLED
+		.max_brightness = 20,
+#else
 		.max_brightness = 15,
+#endif
 		.id		= PMIC8058_ID_FLASH_LED_0,
 	},
 	[1] = {
 		.name		= "camera:flash1",
+#ifdef CONFIG_BRIGHT_FLASHLED
+		.max_brightness = 20,
+#else
 		.max_brightness = 15,
+#endif
 		.id		= PMIC8058_ID_FLASH_LED_1,
 	},
 };

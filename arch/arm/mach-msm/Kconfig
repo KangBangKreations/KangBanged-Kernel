@@ -885,6 +885,58 @@ config PMEM_GPU0
 	help
 	  Enable the PMEM GPU0 device on SMI Memory.
 
+config SHOOTER_PMEM
+	bool "Enable Shooter Pmem Allocation"
+	default n
+	depends on ANDROID_PMEM
+	help
+	  Enable larger Shooter Pmem Allocation sizes.
+
+config MSM_BUS_HIGHOC
+	bool "Increase 8x60 acpu bus clocks to MAX"
+	default n
+	help
+	  Shift entire 8x60 bus clocks up to 473MHz max
+
+config MSM_L2_MAXOC
+	bool "8x60 L2 max cache clock to 1620MHz"
+	default n
+	help
+	  Max L2 clock of 1620MHz
+
+config MSM_KGSL_BUSOC
+	bool "Overclock Bus KGSL Bus Frequencies"
+	default n
+	help
+	  Increase KGSL Bus 3d and 2d Bus Frequencies.
+
+config MSM_KGSL_3D_GPUOC
+	bool "Overclock 3d GPU Clocks"
+	default n
+	depends on MSM_KGSL_BUSOC
+	help
+	  Increase MSM GPU 3d Frequencies.
+
+config MSM_KGSL_2D_GPUOC
+	bool "Overclock 2d GPU Clocks"
+	default n
+	depends on MSM_KGSL_BUSOC
+	help
+	  Increase MSM GPU 2d Frequencies.
+
+config BOOT_CLOCK_OC
+	bool "Overclock Boot Clock"
+	default n
+	depends on MSM_KGSL_BUSOC
+	help
+	  Improve boot time by setting boot rate of 1.782GHz.
+
+config BRIGHT_FLASHLED
+	bool "Increase PM8058 LED max brightness"
+	default n
+	help
+	  Increase PM8058 FLASH_LED_0 and FLASH_LED_1 to 20 from 15
+
 config MSM_AMSS_VERSION
 	int
 	default 6210 if MSM_AMSS_VERSION_6210

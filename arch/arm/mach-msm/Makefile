@@ -19,7 +19,6 @@ endif
 endif
 
 obj-y += acpuclock.o
-obj-y += radio_feedback.o
 obj-$(CONFIG_ARCH_MSM7X01A) += acpuclock-7201.o
 obj-$(CONFIG_ARCH_MSM7X25) += acpuclock-7201.o
 obj-$(CONFIG_ARCH_MSM7X27) += acpuclock-7201.o
@@ -69,7 +68,7 @@ target += smd_rpc_sym.c
 $(obj)/smd_rpc_sym.c: $(src)/smd_rpc_sym $(src)/mkrpcsym.pl
 	$(call if_changed,mkrpcsym)
 
-obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o htc_simlock-8x60.o htc_drm.o htc_sdservice.o
+obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o htc_sdservice.o
 ifdef CONFIG_ARCH_MSM8960
 	obj-y += tz_log.o
 endif
