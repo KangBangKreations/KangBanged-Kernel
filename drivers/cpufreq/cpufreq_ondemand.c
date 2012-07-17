@@ -122,9 +122,9 @@ static struct dbs_tuners {
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 							cputime64_t *wall)
 {
-	u64_t idle_time;
-	u64_t cur_wall_time;
-	u64_t busy_time;
+	cputime64_t idle_time;
+	cputime64_t cur_wall_time;
+	cputime64_t busy_time;
 
 	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
 	busy_time = cputime64_add(kstat_cpu(cpu).cpustat.user,
@@ -135,11 +135,11 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.steal);
 	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.nice);
 
-	idle_time = cur_wall_time - busy_time;
+	idle_time = cputime64_sub(cur_wall_time, busy_time);
 	if (wall)
-		*wall = jiffies_to_usecs(cur_wall_time);
+		*wall = (cputime64_t)jiffies_to_usecs(cur_wall_time);
 
-	return jiffies_to_usecs(idle_time);
+	return (cputime64_t)jiffies_to_usecs(idle_time);
 }
 
 static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall)
@@ -444,24 +444,24 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		cur_idle_time = get_cpu_idle_time(j, &cur_wall_time);
 		cur_iowait_time = get_cpu_iowait_time(j, &cur_wall_time);
 
-		wall_time = (unsigned int)
-			(cur_wall_time - j_dbs_info->prev_cpu_wall);
+		wall_time = (unsigned int) cputime64_sub(cur_wall_time,
+				j_dbs_info->prev_cpu_wall);
+		j_dbs_info->prev_cpu_wall = cur_wall_time;
+
+		idle_time = (unsigned int) cputime64_sub(cur_idle_time,
+				j_dbs_info->prev_cpu_idle);
 		j_dbs_info->prev_cpu_idle = cur_idle_time;
 
-		idle_time = (unsigned int)
-			(cur_idle_time - j_dbs_info->prev_cpu_idle);
-		j_dbs_info->prev_cpu_idle = cur_idle_time;
-
-		iowait_time = (unsigned int)
-			(cur_iowait_time - j_dbs_info->prev_cpu_iowait);
+		iowait_time = (unsigned int) cputime64_sub(cur_iowait_time,
+				j_dbs_info->prev_cpu_iowait);
 		j_dbs_info->prev_cpu_iowait = cur_iowait_time;
 
 		if (dbs_tuners_ins.ignore_nice) {
-			u64 cur_nice;
+			cputime64_t cur_nice;
 			unsigned long cur_nice_jiffies;
 
-			cur_nice = kstat_cpu(j).cpustat.nice -
-					 j_dbs_info->prev_cpu_nice;
+			cur_nice = cputime64_sub(kstat_cpu(j).cpustat.nice,
+					 j_dbs_info->prev_cpu_nice);
 			/*
 			 * Assumption: nice time between sampling periods will
 			 * be less than 2^32 jiffies for 32 bit sys
@@ -721,6 +721,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 
 static int __init cpufreq_gov_dbs_init(void)
 {
+	cputime64_t wall;
 	u64 idle_time;
 	int cpu = get_cpu();
 
@@ -732,7 +733,7 @@ static int __init cpufreq_gov_dbs_init(void)
 		dbs_tuners_ins.down_differential =
 					MICRO_FREQUENCY_DOWN_DIFFERENTIAL;
 		/*
-		 * In nohz/micro accounting case we set the minimum frequency
+		 * In no_hz/micro accounting case we set the minimum frequency
 		 * not depending on HZ, but fixed (very low). The deferred
 		 * timer might skip some samples if idle/sleeping as needed.
 		*/
