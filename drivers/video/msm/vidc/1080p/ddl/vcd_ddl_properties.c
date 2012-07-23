@@ -941,11 +941,6 @@ static u32 ddl_set_enc_property(struct ddl_client_context *ddl,
 				"slice mode: %s\n", __func__);
 			vcd_status = VCD_S_SUCCESS;
 		}
-	} else {
-		DDL_MSG_ERROR("Meta Data Interface is not "
-			"supported in secure session");
-		vcd_status = VCD_ERR_ILLEGAL_OP;
-	}
 	break;
 	case VCD_I_META_BUFFER_MODE:
 		vcd_status = VCD_S_SUCCESS;

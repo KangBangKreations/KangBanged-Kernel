@@ -33,6 +33,14 @@
 #include "venc_internal.h"
 #include "vidc_init.h"
 
+#if DEBUG
+#define DBG(x...) printk(KERN_DEBUG x)
+#else
+#define DBG(x...)
+#endif
+
+#define ERR(x...) printk(KERN_ERR x)
+
 static unsigned int vidc_mmu_subsystem[] = {
 	MSM_SUBSYSTEM_VIDEO};
 

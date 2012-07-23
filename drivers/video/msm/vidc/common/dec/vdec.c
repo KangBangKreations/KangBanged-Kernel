@@ -34,7 +34,11 @@
 #include "vdec_internal.h"
 #include "vidc_init.h"
 
-#define VID_DEC_NAME		"msm_vidc_dec"
+#define DBG(x...) pr_debug("[VID] " x)
+#define INFO(x...) pr_info("[VID] " x)
+#define ERR(x...) pr_err("[VID] " x)
+
+#define VID_DEC_NAME "msm_vidc_dec"
 
 static struct vid_dec_dev *vid_dec_device_p;
 static dev_t vid_dec_dev_num;
