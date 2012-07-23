@@ -58,7 +58,6 @@ static int vcd_pmem_alloc(size_t sz, u8 **kernel_vaddr, u8 **phy_addr,
 		pr_err("%s() map table is full", __func__);
 		goto bailout;
 	}
-	res_trk_set_mem_type(DDL_MM_MEM);
 	memtype = res_trk_get_mem_type();
 	if (!cctxt->vcd_enable_ion) {
 		map_buffer->phy_addr = (phys_addr_t)
@@ -70,7 +69,7 @@ static int vcd_pmem_alloc(size_t sz, u8 **kernel_vaddr, u8 **phy_addr,
 	} else {
 		map_buffer->alloc_handle = ion_alloc(
 			    cctxt->vcd_ion_client, sz, SZ_4K,
-			    memtype);
+			    (1<<memtype));
 		if (!map_buffer->alloc_handle) {
 			pr_err("%s() ION alloc failed", __func__);
 			goto bailout;
@@ -185,36 +184,6 @@ u8 *vcd_pmem_get_physical(struct video_client_ctx *client_ctx,
 		VCD_MSG_ERROR("Couldn't get physical address");
 
 		return NULL;
-	}
-
-}
-
-u32 vcd_get_ion_flag(struct video_client_ctx *client_ctx,
-			  unsigned long kernel_vaddr)
-{
-	unsigned long phy_addr, user_vaddr;
-	int pmem_fd;
-	struct file *file;
-	s32 buffer_index = -1;
-	u32 ion_flag = 0;
-
-	if (vidc_lookup_addr_table(client_ctx, BUFFER_TYPE_INPUT,
-					  false, &user_vaddr, &kernel_vaddr,
-					  &phy_addr, &pmem_fd, &file,
-					  &buffer_index)) {
-
-		ion_flag = vidc_get_fd_info(client_ctx, BUFFER_TYPE_INPUT,
-				pmem_fd, kernel_vaddr, buffer_index);
-		return ion_flag;
-	} else if (vidc_lookup_addr_table(client_ctx, BUFFER_TYPE_OUTPUT,
-		false, &user_vaddr, &kernel_vaddr, &phy_addr, &pmem_fd, &file,
-		&buffer_index)) {
-		ion_flag = vidc_get_fd_info(client_ctx, BUFFER_TYPE_OUTPUT,
-				pmem_fd, kernel_vaddr, buffer_index);
-		return ion_flag;
-	} else {
-		VCD_MSG_ERROR("Couldn't get ion flag");
-		return 0;
 	}
 
 }
@@ -554,7 +523,6 @@ u32 vcd_set_buffer_internal(
 {
 	struct vcd_buffer_entry *buf_entry;
 	u8 *physical;
-	u32 ion_flag = 0;
 
 	buf_entry = vcd_find_buffer_pool_entry(buf_pool, buffer);
 	if (buf_entry) {
@@ -565,9 +533,6 @@ u32 vcd_set_buffer_internal(
 
 	physical = (u8 *) vcd_pmem_get_physical(
 		cctxt->client_data, (unsigned long)buffer);
-
-	ion_flag = vcd_get_ion_flag(cctxt->client_data,
-				(unsigned long)buffer);
 
 	if (!physical) {
 		VCD_MSG_ERROR("Couldn't get physical address");
@@ -583,6 +548,7 @@ u32 vcd_set_buffer_internal(
 		VCD_MSG_ERROR("Can't allocate buffer pool is full");
 		return VCD_ERR_FAIL;
 	}
+
 	buf_entry->virtual = buffer;
 	buf_entry->physical = physical;
 	buf_entry->sz = buf_size;
@@ -591,7 +557,6 @@ u32 vcd_set_buffer_internal(
 
 	buf_entry->frame.virtual = buf_entry->virtual;
 	buf_entry->frame.physical = buf_entry->physical;
-	buf_entry->frame.ion_flag = ion_flag;
 
 	buf_pool->validated++;
 
@@ -703,7 +668,8 @@ u32 vcd_free_one_buffer_internal(
 		return VCD_ERR_ILLEGAL_PARM;
 	}
 	if (buf_entry->in_use) {
-		VCD_MSG_ERROR("\n Buffer is in use and is not flushed");
+		VCD_MSG_ERROR("Buffer is in use and is not flushed: %p, %d\n",
+			buf_entry, buf_entry->in_use);
 		return VCD_ERR_ILLEGAL_OP;
 	}
 
@@ -902,6 +868,7 @@ struct vcd_buffer_entry *vcd_buffer_pool_entry_de_q
 		list_del(&entry->list);
 		pool->q_len--;
 	}
+
 	return entry;
 }
 
@@ -1001,6 +968,7 @@ u32 vcd_flush_buffers(struct vcd_clnt_ctxt *cctxt, u32 mode)
 {
 	u32 rc = VCD_S_SUCCESS;
 	struct vcd_buffer_entry *buf_entry;
+	struct vcd_buffer_entry *orig_frame = NULL;
 
 	VCD_MSG_LOW("vcd_flush_buffers:");
 
@@ -1024,9 +992,19 @@ u32 vcd_flush_buffers(struct vcd_clnt_ctxt *cctxt, u32 mode)
 							 vcd_frame_data),
 						cctxt,
 						cctxt->client_data);
+				orig_frame = vcd_find_buffer_pool_entry(
+						&cctxt->in_buf_pool,
+						buf_entry->virtual);
 				}
 
-			buf_entry->in_use = false;
+			if (orig_frame) {
+				orig_frame->in_use--;
+				if (orig_frame != buf_entry)
+					kfree(buf_entry);
+			} else {
+				buf_entry->in_use = false;
+				VCD_MSG_ERROR("Original frame not found in buffer pool\n");
+			}
 			VCD_BUFFERPOOL_INUSE_DECREMENT(
 				cctxt->in_buf_pool.in_use);
 			buf_entry = NULL;
@@ -1913,7 +1891,7 @@ u32 vcd_handle_input_done(
 	}
 
 	if (VCD_FAILED(status)) {
-		pr_info("INPUT_DONE returned err = 0x%x", status);
+		VCD_MSG_ERROR("INPUT_DONE returned err = 0x%x", status);
 		vcd_handle_input_done_failed(cctxt, transc);
 	} else
 		cctxt->status.mask |= VCD_FIRST_IP_DONE;
@@ -2116,7 +2094,6 @@ struct vcd_clnt_ctxt *cctxt, void *payload)
 	struct vcd_transc *transc;
 	struct ddl_frame_data_tag *frame =
 		(struct ddl_frame_data_tag *)payload;
-	VCD_MSG_LOW("%s\n", __func__);
 
 	rc = vcd_validate_io_done_pyld(cctxt, payload, VCD_S_SUCCESS);
 	if (rc == VCD_ERR_CLIENT_FATAL)
@@ -2150,7 +2127,6 @@ u32 vcd_handle_frame_done(
 	struct vcd_transc *transc;
 	u32 rc;
 	s64 time_stamp;
-	VCD_MSG_LOW("%s\n", __func__);
 
 	rc = vcd_validate_io_done_pyld(cctxt, payload, status);
 	if (rc == VCD_ERR_CLIENT_FATAL)
