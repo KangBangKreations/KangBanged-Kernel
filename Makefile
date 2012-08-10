@@ -195,7 +195,7 @@ SUBARCH := arm
 SUBARCH := arm
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= /media/d4a52625-61cd-4acc-bf04-104ce27eafa7/source/codefire/prebuilt/linux-x86/toolchain/arm-eabi-4.6.3/bin/arm-linux-androideabi-
+CROSS_COMPILE	?= ~/android/system/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 
 # Architecture as present in compile.h
@@ -379,7 +379,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -funswitch-loops -fpredictive-commoning -fgcse-after-reload \
 		   -fno-delete-null-pointer-checks \
-		 
+		  
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
